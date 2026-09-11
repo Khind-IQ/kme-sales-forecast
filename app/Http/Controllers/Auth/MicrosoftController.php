@@ -34,12 +34,21 @@ class MicrosoftController extends Controller
 
         $profile = $graphResponse->json();
 
+        // Resolve the authoritative employee number from the employee master
+        // (matched on the user's corporate email) rather than trusting Graph's
+        // employeeId, which does not reliably equal lobs.sales_representative_no.
+        // Graph's employeeId is only a fallback when no employee-master row matches.
+        $employeeId = \App\Models\Employee::where('email', $msUser->getEmail())->value('employee_no');
+        if (!$employeeId) {
+            $employeeId = $profile['employeeId'] ?? null;
+        }
+
         $user = User::updateOrCreate(
             ['email' => $msUser->getEmail()],
             [
                 'full_name'              => $msUser->getName(),
                 'microsoft_id'      => $msUser->getId(),
-                'employee_id'       => $profile['employeeId'] ?? null,
+                'employee_id'       => $employeeId,
                 'department'        => $profile['department'] ?? null,
                 'branch'            => $profile['officeLocation'] ?? null,
                 'job_title'         => $profile['jobTitle'] ?? null,

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Lob;
 use App\Models\Product;
 use App\Models\ProductPrice;
+use App\Models\Employee;
 
 class SyncRedshiftMasterData extends Command
 {
@@ -218,6 +219,31 @@ class SyncRedshiftMasterData extends Command
                 }
             });
 
+
+        $this->info('Syncing Employees...');
+        DB::connection('redshift')->table('khind_rz.vw_kme_apps_employee_master')
+            ->orderBy('employee_no')
+            ->chunk(500, function ($employees) {
+                $data = [];
+                foreach ($employees as $emp) {
+                    if (!$emp->employee_no) continue;
+                    $rawEmail = trim((string) ($emp->email ?? ''));
+                    $data[$emp->employee_no] = [
+                        'employee_no'     => $emp->employee_no,
+                        'full_name'       => $emp->full_name ?? null,
+                        'email'           => $rawEmail !== '' ? $rawEmail : null,
+                        'department_code' => $emp->department_code ?? null,
+                        'is_salesperson'  => in_array(trim((string) ($emp->is_salesperson ?? '')), ['1', 'true', 'Y'], true),
+                    ];
+                }
+                if (!empty($data)) {
+                    Employee::upsert(
+                        array_values($data),
+                        ['employee_no'],
+                        ['full_name', 'email', 'department_code', 'is_salesperson']
+                    );
+                }
+            });
 
         $this->info('Sync Complete! Your local database is up to date.');
     }
