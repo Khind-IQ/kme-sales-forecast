@@ -60,54 +60,69 @@ export default function Login({
                         </div>
                     )}
 
-                    {displayError && (
-                        <div className="mb-3 bg-red-50 border-l-4 border-red-500 text-red-700 px-2.5 py-2 rounded text-xs flex items-center animate-shake">
-                            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    {customError && (
+                        <div role="alert" className="mb-3 bg-red-50 border-l-4 border-red-500 text-red-700 px-2.5 py-2 rounded text-xs flex items-center animate-shake">
+                            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                             </svg>
-                            <span>{displayError}</span>
+                            <span>{customError}</span>
                         </div>
                     )}
 
                     <form onSubmit={submit} className="space-y-3.5">
                         <div>
-                            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                            <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Email 
                             </label>
                             <input
+                                id="email"
+                                name="email"
                                 type="email"
+                                autoComplete="email"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
+                                aria-invalid={!!errors.email}
+                                aria-describedby={errors.email ? 'email-error' : undefined}
                                 className="w-full px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none bg-slate-50/50 text-sm"
                                 placeholder="name@khind.com"
                                 required
                             />
+                            {errors.email && (
+                                <p id="email-error" role="alert" className="mt-1 text-xs text-red-600">{errors.email}</p>
+                            )}
                         </div>
 
                         <div>
                             <div className="flex justify-between mb-1">
-                                <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-widest text-slate-500">
                                     Password
                                 </label>
                                 {canResetPassword && (
                                     <Link
                                         href={route('password.request')}
-                                        className="text-[9px] font-bold uppercase tracking-tight text-blue-600 hover:text-blue-700">
+                                        className="text-[11px] font-bold uppercase tracking-tight text-blue-600 hover:text-blue-700">
                                         Forgot Password
                                     </Link>
                                 )}
                             </div>
                             <div className="relative">
                                 <input
+                                    id="password"
+                                    name="password"
                                     type={showPassword ? "text" : "password"}
+                                    autoComplete="current-password"
                                     value={data.password}
                                     onChange={(e) => setData('password', e.target.value)}
+                                    aria-invalid={!!errors.password}
+                                    aria-describedby={errors.password ? 'password-error' : undefined}
                                     className="w-full px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none bg-slate-50/50 text-sm"
                                     placeholder="••••••••"
                                     required
                                 />
                                 <button
                                     type="button"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    aria-pressed={showPassword}
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600">
                                     {showPassword ? (
@@ -117,6 +132,9 @@ export default function Login({
                                     )}
                                 </button>
                             </div>
+                            {errors.password && (
+                                <p id="password-error" role="alert" className="mt-1 text-xs text-red-600">{errors.password}</p>
+                            )}
                         </div>
 
                         <div className="flex items-center">
@@ -135,7 +153,7 @@ export default function Login({
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-slate-900 text-white py-2 rounded-lg font-bold text-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50 transition-all shadow-sm active:scale-[0.98]"
+                            className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 disabled:opacity-50 transition-all shadow-sm active:scale-[0.98]"
                         >
                             {processing ? 'Authenticating...' : 'Sign In'}
                         </button>

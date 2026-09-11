@@ -50,7 +50,7 @@ export default function Register() {
                     <form onSubmit={submit} className="space-y-3.5">
                         {/* Full Name */}
                         <div>
-                            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                            <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Full Name
                             </label>
                             <input
@@ -65,7 +65,7 @@ export default function Register() {
 
                         {/* Email */}
                         <div>
-                            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                            <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Email
                             </label>
                             <input
@@ -80,7 +80,7 @@ export default function Register() {
 
                         {/* Password */}
                         <div>
-                            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                            <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Password
                             </label>
                             <div className="relative">
@@ -108,7 +108,7 @@ export default function Register() {
 
                         {/* Confirm Password */}
                         <div>
-                            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                            <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Confirm Password
                             </label>
                             <input
@@ -124,7 +124,7 @@ export default function Register() {
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-slate-900 text-white py-2 rounded-lg font-bold text-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50 transition-all shadow-sm active:scale-[0.98]"
+                            className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 disabled:opacity-50 transition-all shadow-sm active:scale-[0.98]"
                         >
                             {processing ? 'Creating Account...' : 'Register'}
                         </button>
