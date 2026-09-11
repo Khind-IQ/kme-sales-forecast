@@ -3,13 +3,15 @@ import { router } from '@inertiajs/react';
 import { Download, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 
 // shared Utilities & Hooks
-import { USD_TO_AED_RATE, ITEMS_PER_PAGE } from '../Utils/constants';
+import { ITEMS_PER_PAGE } from '../Utils/constants';
+import { useExchangeRates } from '../Hooks/useExchangeRates';
 import { getNextMonthString } from '../Utils/helpers';
 import { downloadCSV } from '../Utils/exportUtils';
 import { useDebounce } from '../Hooks/useDebounce';
 import { usePagination } from '../Hooks/usePagination';
 import { useColumnVisibility } from '../Hooks/useColumnVisibility';
 import Pagination from './Shared/Pagination';
+import MonthPicker from './Shared/MonthPicker';
 import ColumnSettings from './Shared/ColumnSetting';
 
 const DEFAULT_COLS = {
@@ -22,6 +24,7 @@ type SortColumn = 'lobName' | 'itemCode' | 'category';
 type SortDirection = 'asc' | 'desc';
 
 export default function SummaryByLOB({ isActive, dbLobs, dbProducts, dbPricing, dbEntries, searchTerm, user }: any) {
+  const { USD_TO_AED_RATE } = useExchangeRates();
   const [monthFilter, setMonthFilter] = useState(getNextMonthString());
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortColumn, direction: SortDirection }>({ key: 'lobName', direction: 'asc' });
@@ -38,7 +41,7 @@ export default function SummaryByLOB({ isActive, dbLobs, dbProducts, dbPricing, 
           setIsLoadingData(true);
       }
       router.reload({
-          only: ['dbProducts', 'dbPricingMonth', 'dbEntriesMonth'],
+          only: ['dbProductsMonth', 'dbPricingMonth', 'dbEntriesMonth'],
           data: { summary_month: monthFilter },
           onFinish: () => {
               if (showSpinner) {
@@ -210,8 +213,8 @@ export default function SummaryByLOB({ isActive, dbLobs, dbProducts, dbPricing, 
           <div className="flex items-center gap-4">
             <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Summary By LOB</h3>
             <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-                <span className="text-xs font-bold text-slate-400 uppercase">Forecast View:</span>
-                <input type="month" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} className="border-none text-xs font-black text-blue-600 focus:ring-0 cursor-pointer p-0 h-6" />
+                <span className="text-xs font-bold text-slate-500 uppercase">Forecast View:</span>
+                <MonthPicker value={monthFilter} onChange={setMonthFilter} className="text-xs font-black text-blue-600 h-6 px-1 cursor-pointer" />
             </div>
           </div>
           
@@ -249,9 +252,9 @@ export default function SummaryByLOB({ isActive, dbLobs, dbProducts, dbPricing, 
           </div>
         </div>
         
-        <div className="overflow-auto flex-1 relative">
+        <div className="overflow-auto flex-1 relative" aria-busy={isLoadingData}>
             {isLoadingData ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 gap-3 z-50">
+                <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50/50 gap-3 z-50">
                     <Loader2 size={30} className="animate-spin text-blue-500" />
                     <span className="text-sm font-medium">Aggregating Data for {monthFilter}...</span>
                 </div>
@@ -349,7 +352,7 @@ export default function SummaryByLOB({ isActive, dbLobs, dbProducts, dbPricing, 
                                 {visibleCols.ln_price && <td className={`border border-slate-200 px-3 py-2 text-right tracking-wider ${item.ln_price !== null ? 'text-emerald-600' : 'text-slate-300 italic'}`}>{item.ln_price !== null ? item.ln_price.toFixed(2) : '#N/A'}</td>}
                                 {visibleCols.cogs_price && (
                                     <td className={`border border-slate-200 px-3 py-2 text-right tracking-wider ${item.cogs_price ? 'text-rose-600' : 'text-slate-300 italic'}`}>
-                                        {item.cogs_price ? (<div className="flex flex-col items-end"><span>{Number(item.cogs_price).toFixed(2)}</span>{isCogsUsd && <span className="text-slate-400">(AED {cogsPriceAed})</span>}</div>) : '#N/A'}
+                                        {item.cogs_price ? (<div className="flex flex-col items-end"><span>{Number(item.cogs_price).toFixed(2)}</span>{isCogsUsd && <span className="text-slate-500">(AED {cogsPriceAed})</span>}</div>) : '#N/A'}
                                     </td>
                                 )}
                                 {visibleCols.cogs_currency && <td className="border border-slate-200 px-3 py-2 text-center text-slate-600">{item.cogs_currency || '-'}</td>}
@@ -368,7 +371,7 @@ export default function SummaryByLOB({ isActive, dbLobs, dbProducts, dbPricing, 
                             </tr>
                         );
                     })}
-                    {lobSummaryData.length === 0 && <tr><td colSpan={activeColCount} className="p-10 text-center text-slate-400 italic">{searchTerm ? 'No entries match your search.' : `No forecast entries found for ${monthFilter}.`}</td></tr>}
+                    {lobSummaryData.length === 0 && <tr><td colSpan={activeColCount} className="p-10 text-center text-slate-500 italic">{searchTerm ? 'No entries match your search.' : `No forecast entries found for ${monthFilter}.`}</td></tr>}
                 </tbody>
 
                 {lobSummaryData.length > 0 && (
@@ -385,11 +388,11 @@ export default function SummaryByLOB({ isActive, dbLobs, dbProducts, dbPricing, 
                             {visibleCols.avg6m && <td className="px-3 py-3 text-center">-</td>}
                             {visibleCols.avg3m && <td className="px-3 py-3 text-center">-</td>}
                             
-                            <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-300 ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-400'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.forecast_qty : '-'}</td>
+                            <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-300 ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.forecast_qty : '-'}</td>
                             {visibleCols.confirmed_qty && (
-                                <td className={`border border-slate-300 px-3 py-2 text-center ${gridTotals.confirmed_qty > 0 ? 'bg-emerald-100/60 text-emerald-900' : 'text-slate-400'}`}>{gridTotals.confirmed_qty > 0 ? gridTotals.confirmed_qty : '-'}</td>
+                                <td className={`border border-slate-300 px-3 py-2 text-center ${gridTotals.confirmed_qty > 0 ? 'bg-emerald-100/60 text-emerald-900' : 'text-slate-500'}`}>{gridTotals.confirmed_qty > 0 ? gridTotals.confirmed_qty : '-'}</td>
                             )}
-                            <td className={`border border-slate-300 px-3 py-2 text-right ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-400'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                            <td className={`border border-slate-300 px-3 py-2 text-right ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                         </tr>
                     </tfoot>
                 )}

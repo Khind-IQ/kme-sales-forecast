@@ -218,7 +218,7 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto pb-4 max-h-[800px] overflow-y-auto custom-scrollbar">
-                <table className="w-full text-[11px] text-center border-collapse whitespace-nowrap">
+                <table className="w-full text-xs text-center border-collapse whitespace-nowrap">
                     <thead className="sticky top-0 z-20 shadow-sm">
                         <tr>
                             <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 sticky left-0 z-30 min-w-[120px]" rowSpan={2}>Sales person</th>
@@ -271,7 +271,7 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
                                                             <td key={`input-w${w}-${month.key}`} className="border border-slate-300 px-1 py-1 bg-white">
                                                                 <input 
                                                                     type="number" value={val} onChange={(e) => handleInputChange(category, month.key, weekField, e.target.value)} placeholder="0.00"
-                                                                    className={`w-16 text-right text-[10px] h-6 border-slate-200 rounded focus:ring-blue-500 font-bold transition-colors ${isEdited ? 'bg-blue-50 text-blue-900 border-blue-400' : 'text-slate-700'}`}
+                                                                    className={`w-16 text-right text-[11px] h-6 border-slate-200 rounded focus:ring-blue-500 font-bold transition-colors ${isEdited ? 'bg-blue-50 text-blue-900 border-blue-400' : 'text-slate-700'}`}
                                                                 />
                                                             </td>
                                                         );
@@ -284,7 +284,7 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
                                                     <td className="border border-slate-300 px-1 py-1 border-r-2 border-r-slate-400 bg-white">
                                                         <input 
                                                             type="number" value={data.budget ?? ''} onChange={(e) => handleInputChange(category, month.key, 'budget', e.target.value)} placeholder="0.00"
-                                                            className={`w-20 text-right text-[10px] h-6 border-slate-200 rounded focus:ring-amber-500 font-bold transition-colors ${data.budget !== (initialDataMap[category]?.[month.key]?.budget || '') ? 'bg-amber-100 text-amber-900 border-amber-400' : 'bg-amber-50/20 text-amber-900'}`}
+                                                            className={`w-20 text-right text-[11px] h-6 border-slate-200 rounded focus:ring-amber-500 font-bold transition-colors ${data.budget !== (initialDataMap[category]?.[month.key]?.budget || '') ? 'bg-amber-100 text-amber-900 border-amber-400' : 'bg-amber-50/20 text-amber-900'}`}
                                                         />
                                                     </td>
                                                 </React.Fragment>
@@ -332,7 +332,7 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
                                 </tr>
                             </>
                         ) : (
-                            <tr><td colSpan={86} className="p-10 text-center text-slate-400 italic">No forecast data found for {selectedYear}.</td></tr>
+                            <tr><td colSpan={86} className="p-10 text-center text-slate-500 italic">No forecast data found for {selectedYear}.</td></tr>
                         )}
                     </tbody>
                 </table>

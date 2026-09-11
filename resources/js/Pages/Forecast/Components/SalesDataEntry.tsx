@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { router, usePage } from '@inertiajs/react'; 
 import Select from 'react-select'; 
-import { Save, CheckCircle2, Download, Search, Loader2 } from 'lucide-react';
+import { Save, CheckCircle2, Download, Search, Loader2, Lock, AlertCircle, Info } from 'lucide-react';
 
 // shared  Utilities & Hooks
-import { EXCHANGE_RATES, USD_TO_AED_RATE } from '../Utils/constants';
 import { getNextMonthString, getPreviousMonthString } from '../Utils/helpers';
 import { downloadCSV } from '../Utils/exportUtils';
 import { usePagination } from '../Hooks/usePagination';
+import { useExchangeRates } from '../Hooks/useExchangeRates';
 import Pagination from './Shared/Pagination';
+import MonthPicker from './Shared/MonthPicker';
 
 const customSelectStyles = {
     menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
@@ -23,10 +24,11 @@ const customSelectStyles = {
 
 export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntries }: any) {
   const user = usePage().props.auth.user as any; 
+  const { EXCHANGE_RATES, USD_TO_AED_RATE } = useExchangeRates();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false); // track loading state
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   
   const [selectedLob, setSelectedLob] = useState<number | null>(null);
   const [planningMonth, setPlanningMonth] = useState(getNextMonthString());
@@ -34,6 +36,12 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
   const [lobSearchInput, setLobSearchInput] = useState(''); 
   const [recentMonthFilter, setRecentMonthFilter] = useState(getNextMonthString());
   const [edits, setEdits] = useState<Record<number, { qty?: number | '', planPrice?: number | '', confirmedQty?: number | '' }>>({});
+
+  // View-only rule: forecasts can only be entered/edited for next month onward
+  // (matches the backend validation `after_or_equal:nextMonth`). Selecting the
+  // current month or any past month puts the grid into read-only mode so reps
+  // can still review historical forecasts without editing or saving them.
+  const isReadOnly = planningMonth < getNextMonthString();
 
   const lobOptions = useMemo(() => {
     const lowerSearch = lobSearchInput.toLowerCase();
@@ -97,12 +105,13 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
               saved_qty: existingEntry ? Number(existingEntry.planned_quantity) : '',
               saved_price: existingEntry && Number(existingEntry.planned_price_aed) !== Number(masterPrice) ? Number(existingEntry.planned_price_aed) : '',
               saved_confirmed_qty: existingEntry && existingEntry.confirmed_quantity != null ? Number(existingEntry.confirmed_quantity) : '', 
-              prefill_qty: (!existingEntry && previousEntry) ? Number(previousEntry.planned_quantity) : '',
-              prefill_price: (!existingEntry && previousEntry && Number(previousEntry.planned_price_aed) !== Number(masterPrice)) ? Number(previousEntry.planned_price_aed) : '',
-              prefill_confirmed_qty: (!existingEntry && previousEntry && previousEntry.confirmed_quantity != null) ? Number(previousEntry.confirmed_quantity) : ''
+              // No carry-forward prefill when viewing a past/current month (read-only) — show saved data only
+              prefill_qty: (!isReadOnly && !existingEntry && previousEntry) ? Number(previousEntry.planned_quantity) : '',
+              prefill_price: (!isReadOnly && !existingEntry && previousEntry && Number(previousEntry.planned_price_aed) !== Number(masterPrice)) ? Number(previousEntry.planned_price_aed) : '',
+              prefill_confirmed_qty: (!isReadOnly && !existingEntry && previousEntry && previousEntry.confirmed_quantity != null) ? Number(previousEntry.confirmed_quantity) : ''
           };
       });
-  }, [selectedLob, planningMonth, dbProducts, dbPricing, dbEntries]);
+  }, [selectedLob, planningMonth, dbProducts, dbPricing, dbEntries, isReadOnly, USD_TO_AED_RATE]);
 
   const filteredGridProducts = useMemo(() => {
       if (!productSearchInput.trim()) return baseGridProducts;
@@ -183,6 +192,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
   const handleSaveAll = (e: React.FormEvent) => {
       e.preventDefault();
       if (!selectedLob) return;
+      if (isReadOnly) return showNotification('This month is view-only. Select next month or later to edit.', 'info');
 
       const payloadEntries: any[] = [];
       baseGridProducts.forEach((prod: any) => {
@@ -204,7 +214,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           }
       });
 
-      if (payloadEntries.length === 0) return showNotification('No pending updates found.');
+      if (payloadEntries.length === 0) return showNotification('No pending updates found.', 'info');
 
       setIsSaving(true);
       router.post(route('forecast.store'), { entries: payloadEntries }, {
@@ -216,12 +226,12 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
               setRecentMonthFilter(planningMonth); 
               setIsSaving(false);
           },
-          onError: () => { showNotification('Error saving entries.'); setIsSaving(false); }
+          onError: () => { showNotification('Error saving entries.', 'error'); setIsSaving(false); }
       });
   };
 
   const exportEntriesToCSV = () => {
-    if (filteredEntries.length === 0) return showNotification('No entries to export.');
+    if (filteredEntries.length === 0) return showNotification('No entries to export.', 'info');
     const headers = ['Month', 'BP Code', 'Product Line', 'Product Model', 'Plan Qty', 'Confirmed Qty', 'Net Sales (AED)'];
     const rows = filteredEntries.map((entry: any) => {
         const bp = dbLobs.find((l:any) => l.lob_id === entry.lob_id)?.sold_to_bp || 'Unknown';
@@ -234,16 +244,23 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
     downloadCSV(`forecast_entries_${recentMonthFilter}.csv`, headers, rows);
   };
 
-  const showNotification = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
+  const showNotification = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setNotification({ message: msg, type });
+    setTimeout(() => setNotification(null), type === 'error' ? 5000 : 3000);
   };
 
   return (
     <div className="max-w-8xl mx-auto flex flex-col h-full space-y-4 relative animate-in fade-in duration-300">
         {notification && (
-          <div className="fixed top-20 right-8 bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-in slide-in-from-top-4">
-            <CheckCircle2 size={20} /> {notification}
+          <div
+            role={notification.type === 'error' ? 'alert' : 'status'}
+            aria-live={notification.type === 'error' ? 'assertive' : 'polite'}
+            className={`fixed top-20 right-8 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-in slide-in-from-top-4 ${
+              notification.type === 'error' ? 'bg-rose-600' : notification.type === 'info' ? 'bg-slate-800' : 'bg-emerald-500'
+            }`}
+          >
+            {notification.type === 'error' ? <AlertCircle size={20} /> : notification.type === 'info' ? <Info size={20} /> : <CheckCircle2 size={20} />}
+            {notification.message}
           </div>
         )}
 
@@ -251,7 +268,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 shrink-0">
           <div className="flex flex-wrap items-end gap-6">
               <div className="w-96 flex-shrink-0">
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Sold to BP</label>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Sold to BP</label>
                   <Select isClearable options={lobOptions} menuPortalTarget={document.body} styles={customSelectStyles} value={lobOptions.find((opt:any) => opt.value === selectedLob) || null} placeholder="Search BP Code or Name..." onInputChange={(val, a) => { if (a.action === 'input-change') setLobSearchInput(val); }} onChange={(opt: any) => { 
                         const newLobId = opt ? opt.value : null;
                         setSelectedLob(newLobId); 
@@ -262,7 +279,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                         if (newLobId) {
                             setIsLoadingData(true);
                             router.reload({
-                                only: ['dbProducts', 'dbPricingLob', 'dbEntriesLob'],
+                                only: ['dbProductsLob', 'dbPricingLob', 'dbEntriesLob'],
                                 data: { lob_id: newLobId }, // Pass the selected LOB
                                 onFinish: () => setIsLoadingData(false) // preserveState and preserveScroll are true by default!
                             });
@@ -271,14 +288,22 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                   />
               </div>
               <div className="w-48">
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Forecast Month</label>
-                  <input type="month" min={getNextMonthString()} value={planningMonth} onChange={(e) => setPlanningMonth(e.target.value)} className="w-full border-slate-300 rounded-lg h-[36px] text-sm focus:ring-blue-500" />
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Forecast Month</label>
+                  <MonthPicker value={planningMonth} onChange={setPlanningMonth} editableFrom={getNextMonthString()} className={`w-full border rounded-lg h-[36px] px-3 text-sm text-left bg-white focus:ring-2 focus:ring-blue-500 ${isReadOnly ? 'border-amber-300 text-amber-700' : 'border-slate-300 text-slate-700 hover:border-slate-400'}`} />
               </div>
-              
+
+              {/* View-only indicator for current/past months */}
+              {isReadOnly && (
+                  <div className="bg-amber-50 border border-amber-200 px-3 h-[36px] rounded-lg flex items-center gap-2" role="status">
+                      <Lock size={14} className="text-amber-600 shrink-0" />
+                      <span className="text-xs font-bold text-amber-800">View only — past forecasts can't be edited</span>
+                  </div>
+              )}
+
               {/* show the Admin who owns this LOB */}
               {user.role_id === 2 && selectedLob && (
                   <div className="bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg flex flex-col justify-center">
-                      <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider"></span>
+                      <span className="text-[11px] font-black text-amber-600 uppercase tracking-wider"></span>
                       <span className="text-xs font-bold text-amber-800">
                           {lobOptions.find((opt: any) => opt.value === selectedLob)?.repName || 'Unassigned'}
                       </span>
@@ -287,9 +312,15 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
               
               <div className="flex-1"></div>
               
-              <button onClick={handleSaveAll} disabled={pendingSavesCount === 0 || isSaving || isLoadingData} className="bg-blue-600 text-white h-[36px] px-6 rounded-lg font-bold text-sm hover:bg-blue-700 disabled:bg-slate-300 flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap">
-                  <Save size={16} /> {isSaving ? 'Saving...' : `Save ${pendingSavesCount} Updates`}
-              </button>
+              {isReadOnly ? (
+                  <div className="h-[36px] px-6 rounded-lg font-bold text-sm flex items-center justify-center gap-2 bg-slate-100 text-slate-500 border border-slate-200 whitespace-nowrap cursor-not-allowed">
+                      <Lock size={16} /> Saving disabled
+                  </div>
+              ) : (
+                  <button onClick={handleSaveAll} disabled={pendingSavesCount === 0 || isSaving || isLoadingData} className="bg-blue-600 text-white h-[36px] px-6 rounded-lg font-bold text-sm hover:bg-blue-700 disabled:bg-slate-300 flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap">
+                      <Save size={16} /> {isSaving ? 'Saving...' : `Save ${pendingSavesCount} Updates`}
+                  </button>
+              )}
           </div>
       </div>
 
@@ -300,24 +331,40 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                   <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Mass Entry {filteredGridProducts.length > 0 && `(${filteredGridProducts.length} Products)`}</span>
                   {isLoadingData && <Loader2 size={14} className="animate-spin text-blue-500 ml-2" />}
+                  {selectedLob && !isReadOnly && (
+                      <div className="hidden xl:flex items-center gap-3 ml-3 pl-3 border-l border-slate-200">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-blue-100 border border-blue-300 shrink-0"></span>
+                              Unsaved changes
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-100 border border-emerald-300 shrink-0"></span>
+                              Carried from last month
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-amber-100 border border-amber-300 shrink-0"></span>
+                              Custom price (differs from list)
+                          </span>
+                      </div>
+                  )}
               </div>
               <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input type="text" placeholder="Filter product based on BP..." value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} disabled={!selectedLob || isLoadingData} className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-full text-xs focus:ring-blue-500 w-64 shadow-inner disabled:bg-slate-100" />
               </div>
           </div>
           
-          <div className="overflow-auto flex-1 relative">
+          <div className="overflow-auto flex-1 relative" aria-busy={isLoadingData}>
             {!selectedLob ? (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400 italic text-sm bg-slate-50/50">Please select a Business Partner to load the grid.</div>
+                <div className="absolute inset-0 flex items-center justify-center text-slate-500 italic text-sm bg-slate-50/50">Please select a Business Partner to load the grid.</div>
             ) : isLoadingData ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 gap-3">
+                <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50/50 gap-3">
                     <Loader2 size={30} className="animate-spin text-blue-500" />
                     <span className="text-sm font-medium">Fetching Pricing & Data...</span>
                 </div>
             ) : (
                 <table className="w-full text-left border-collapse whitespace-nowrap">
-                    <thead className="sticky top-0 z-20 shadow-sm text-[10px] uppercase tracking-wider text-slate-500 bg-white">
+                    <thead className="sticky top-0 z-20 shadow-sm text-[11px] uppercase tracking-wider text-slate-500 bg-white">
                         <tr>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 w-12 text-center">No</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">LOB</th>
@@ -333,7 +380,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-purple-50 text-purple-800 text-right w-32 border-l border-slate-200">GP (AED)</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-[11px]">
+                    <tbody className="divide-y divide-slate-100 text-xs">
                         {paginatedData.map((prod: any, idx: number) => {
                             const editData = edits[prod.product_id];
                             const isEditing = editData !== undefined;
@@ -355,8 +402,8 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             const isRowModified = isQtyChanged || isPriceChanged || isConfirmedQtyChanged;
 
                             return (
-                                <tr key={prod.product_id} className={`transition-colors ${isRowModified ? 'bg-blue-50/40' : 'hover:bg-slate-50'}`}>
-                                    <td className="px-4 py-2 font-mono text-slate-400 text-center">{actualIdx}</td>
+                                <tr key={prod.product_id} className={`transition-colors ${isRowModified ? 'bg-blue-100/70 hover:bg-blue-100' : 'hover:bg-slate-50'}`}>
+                                    <td className="px-4 py-2 font-mono text-slate-500 text-center">{actualIdx}</td>
                                     <td className="px-4 py-2 font-medium text-slate-700 truncate max-w-[120px]">{currentLobName}</td>
                                     <td className="px-4 py-2 font-bold text-slate-800">{prod.product_model}</td>
                                     <td className="px-4 py-2 font-mono text-slate-500">{prod.item_code}</td>
@@ -366,28 +413,28 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                                     <td className="px-4 py-2 text-right font-medium text-slate-500">
                                         <div className="flex flex-col">
                                             <span>{prod.cogs_price_aed > 0 ? prod.cogs_price_aed.toFixed(2) : '-'}</span>
-                                            {prod.is_cogs_usd && prod.cogs_raw > 0 && <span className="text-[9px] text-slate-400">(${prod.cogs_raw.toFixed(2)})</span>}
+                                            {prod.is_cogs_usd && prod.cogs_raw > 0 && <span className="text-[11px] text-slate-500">(${prod.cogs_raw.toFixed(2)})</span>}
                                         </div>
                                     </td>
                                     
                                     <td className="px-3 py-1.5 border-l border-l-slate-100 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.02)]">
-                                        <input type="number" min="0" value={rowQty} onChange={(e) => handleEdit(prod.product_id, 'qty', e.target.value)} placeholder="0" className={`w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-blue-500 font-bold transition-colors ${isPrefilled ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : ''}`} />
+                                        <input type="number" min="0" value={rowQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'qty', e.target.value)} placeholder="0" className={`w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-blue-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : ''}`} />
                                     </td>
                                     <td className="px-3 py-1.5">
-                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} onChange={(e) => handleEdit(prod.product_id, 'planPrice', e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
+                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'planPrice', e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
                                     </td>
                                     <td className="px-3 py-1.5 border-x border-slate-200">
-                                        <input type="number" min="0" value={rowConfirmedQty} onChange={(e) => handleEdit(prod.product_id, 'confirmedQty', e.target.value)} placeholder="0" className="w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-emerald-500 font-bold transition-colors" />
+                                        <input type="number" min="0" value={rowConfirmedQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'confirmedQty', e.target.value)} placeholder="0" className="w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-emerald-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed" />
                                     </td>
                                     <td className="px-4 py-2 text-right font-black text-slate-700">{totalVal > 0 ? totalVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                    <td className={`px-4 py-2 text-right font-black border-l border-slate-100 ${gpVal > 0 ? 'text-purple-700' : gpVal < 0 ? 'text-red-600' : 'text-slate-400'}`}>{gpVal !== 0 ? gpVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                    <td className={`px-4 py-2 text-right font-black border-l border-slate-100 ${gpVal > 0 ? 'text-purple-700' : gpVal < 0 ? 'text-red-600' : 'text-slate-500'}`}>{gpVal !== 0 ? gpVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 </tr>
                             );
                         })}
-                        {paginatedData.length === 0 && <tr><td colSpan={12} className="px-4 py-12 text-center text-slate-400 italic">No products found matching your filter.</td></tr>}
+                        {paginatedData.length === 0 && <tr><td colSpan={12} className="px-4 py-12 text-center text-slate-500 italic">No products found matching your filter.</td></tr>}
                     </tbody>
                     {filteredGridProducts.length > 0 && (
-                        <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-slate-100 font-bold text-[11px] text-slate-700">
+                        <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-slate-100 font-bold text-xs text-slate-700">
                             <tr>
                                 <td colSpan={7} className="px-4 py-3 text-right uppercase tracking-wider">Total (All Pages)</td>
                                 <td className="px-3 py-3 text-center text-blue-700 border-l border-slate-200">{gridTotals.totalFcastQty}</td>
@@ -413,15 +460,15 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           <div className="flex items-center gap-4">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Your Recent Entries</h3>
               <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">View Month:</span>
-                  <input type="month" value={recentMonthFilter} onChange={(e) => setRecentMonthFilter(e.target.value)} className="border-none text-xs font-black text-blue-600 focus:ring-0 cursor-pointer p-0 h-6" />
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">View Month:</span>
+                  <MonthPicker value={recentMonthFilter} onChange={setRecentMonthFilter} className="text-xs font-black text-blue-600 h-6 px-1 cursor-pointer" />
               </div>
           </div>
           <button onClick={exportEntriesToCSV} disabled={filteredEntries.length === 0} className="flex items-center gap-2 text-xs font-bold bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><Download size={14} /> Export CSV</button>
         </div>
         <div className="overflow-auto flex-1 relative">
           <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[10px] uppercase sticky top-0 shadow-sm z-20">
+            <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase sticky top-0 shadow-sm z-20">
               <tr>
                 <th className="px-6 py-4 bg-white">Month</th>
                 <th className="px-6 py-4 bg-white">BP Code</th>
@@ -432,7 +479,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                 <th className="px-6 py-4 text-right bg-white">Net Sales (AED)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[11px]">
+            <tbody className="divide-y divide-slate-100 text-xs">
                 {filteredEntries.map((entry: any) => (
                 <tr key={entry.user_planning_id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-mono text-xs">{entry.planning_month}</td>
@@ -444,7 +491,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                   <td className="px-6 py-4 text-right font-black text-blue-600">{Number(entry.total_amount).toFixed(2)}</td>
                 </tr>
               ))}
-              {filteredEntries.length === 0 && <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-400 italic font-medium">No entries found for {recentMonthFilter}.</td></tr>}
+              {filteredEntries.length === 0 && <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500 italic font-medium">No entries found for {recentMonthFilter}.</td></tr>}
             </tbody>
           </table>
         </div>
