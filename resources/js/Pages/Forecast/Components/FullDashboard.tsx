@@ -1,11 +1,25 @@
 import React, { useState, useMemo, useEffect,useRef } from 'react';
 import { router } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
-import { EXCHANGE_RATES } from '../Utils/constants';
+import MonthPicker from './Shared/MonthPicker';
+import { useExchangeRates } from '../Hooks/useExchangeRates';
+import { Doughnut, Bar } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    ArcElement,
+    Tooltip,
+    Legend,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+} from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 const CHART_COLORS = ['#ec4899', '#8b5cf6', '#4f46e5', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b', '#f97316', '#ef4444', '#14b8a6'];
 
 export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing = [], dbEntries, dbActualSales = [], user }: any) {
+  const { EXCHANGE_RATES } = useExchangeRates();
   const [dashCurrency, setDashCurrency] = useState<'AED' | 'MYR' | 'USD'>('AED');
   const [isLoadingData, setIsLoadingData] = useState(false);
   const fetchedRange = useRef<string | null>(null);
@@ -32,7 +46,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
           setIsLoadingData(true);
       }
       router.reload({
-          only: ['dbProducts', 'dbPricingMonth', 'dbEntriesMonth', 'dbActualSales'],
+          only: ['dbProductsMonth', 'dbPricingMonth', 'dbEntriesMonth', 'dbActualSales'],
           data: { 
               start_month: dashFilters.startMonth, 
               end_month: dashFilters.endMonth,
@@ -274,39 +288,111 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
     };
   }, [dbEntries, dbActualSales, lobsById, productsById, repNameMap, dashFilters, dashCurrency]); 
 
-  const maxLOBChartValue = useMemo(() => Math.max(...fullDashboardData.lobChartData.map(d => Math.max(d.forecast, d.confirmed || 0, d.actual)), 100), [fullDashboardData.lobChartData]);
-  const maxPLChartValue = useMemo(() => Math.max(...fullDashboardData.productLineChartData.map(d => d.forecast), 100), [fullDashboardData.productLineChartData]);
+  // ---- Chart.js datasets (derived from fullDashboardData) ----
+  const compact = (v: number) => Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+  const money = (v: number) => `${dashCurrency} ${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
-  let currentDonutOffset = 0;
+  const repDoughnut = useMemo(() => {
+    const reps = fullDashboardData.repChartData;
+    return {
+      labels: reps.map(r => r.name),
+      datasets: [{
+        data: reps.map(r => r.actual),
+        backgroundColor: reps.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+        borderColor: '#ffffff',
+        borderWidth: 2,
+      }],
+    };
+  }, [fullDashboardData.repChartData]);
+
+  const lobBar = useMemo(() => {
+    const d = fullDashboardData.lobChartData;
+    return {
+      labels: d.map(x => x.lobName),
+      datasets: [
+        { label: 'Forecast', data: d.map(x => x.forecast), backgroundColor: '#3b82f6', borderRadius: 3 },
+        { label: 'Confirmed', data: d.map(x => x.confirmed || 0), backgroundColor: '#10b981', borderRadius: 3 },
+        { label: 'Actual Sales', data: d.map(x => x.actual), backgroundColor: '#9333ea', borderRadius: 3 },
+      ],
+    };
+  }, [fullDashboardData.lobChartData]);
+
+  const plBar = useMemo(() => {
+    const d = fullDashboardData.productLineChartData;
+    return {
+      labels: d.map(x => x.lineName),
+      datasets: [{ label: 'Forecast', data: d.map(x => x.forecast), backgroundColor: '#fdb797', borderColor: '#e69b7a', borderWidth: 1, borderRadius: 3 }],
+    };
+  }, [fullDashboardData.productLineChartData]);
+
+  const doughnutOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: any) => {
+            const total = fullDashboardData.actualTotal || 1;
+            const pct = ((ctx.parsed / total) * 100).toFixed(1);
+            return `${ctx.label}: ${money(ctx.parsed)} (${pct}%)`;
+          },
+        },
+      },
+    },
+  };
+
+  const barOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true } },
+      tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${money(ctx.parsed.y)}` } },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: (v: any) => compact(Number(v)) } },
+    },
+  };
+
+  const plBarOptions: any = {
+    ...barOptions,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx: any) => `Forecast: ${money(ctx.parsed.y)}` } },
+    },
+  };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300 pb-12">
+    <div className="w-full space-y-6 animate-in fade-in duration-300 pb-12" aria-busy={isLoadingData}>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="grid grid-cols-6 gap-4 items-end mb-4">
                 {/* DATE FILTERS */}
                 <div>
-                    <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 mb-1 uppercase">
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-500 mb-1 uppercase">
                         From Month
                         {isLoadingData && <Loader2 size={12} className="animate-spin text-blue-500" />}
                     </label>
-                    <input type="month" disabled={isLoadingData} value={dashFilters.startMonth} onChange={(e) => setDashFilters({...dashFilters, startMonth: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 font-bold disabled:opacity-50" />
+                    <MonthPicker disabled={isLoadingData} value={dashFilters.startMonth} onChange={(v) => setDashFilters({...dashFilters, startMonth: v})} max={dashFilters.endMonth || undefined} className="w-full text-xs border border-slate-200 rounded py-1.5 px-2 text-left text-slate-700 font-bold bg-white hover:border-slate-300 disabled:opacity-50" />
                 </div>
                 <div>
-                    <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 mb-1 uppercase">
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-500 mb-1 uppercase">
                         To Month
                         {isLoadingData && <Loader2 size={12} className="animate-spin text-blue-500" />}
                     </label>
-                    <input type="month" disabled={isLoadingData} value={dashFilters.endMonth} onChange={(e) => setDashFilters({...dashFilters, endMonth: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 font-bold disabled:opacity-50" />
+                    <MonthPicker disabled={isLoadingData} value={dashFilters.endMonth} onChange={(v) => setDashFilters({...dashFilters, endMonth: v})} min={dashFilters.startMonth || undefined} className="w-full text-xs border border-slate-200 rounded py-1.5 px-2 text-left text-slate-700 font-bold bg-white hover:border-slate-300 disabled:opacity-50" />
                 </div>
                 <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">LOB</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">LOB</label>
                     <select disabled={isLoadingData} value={dashFilters.lob} onChange={(e) => setDashFilters({...dashFilters, lob: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50">
                         <option value="All">All</option>{dashboardFilterOptions.lobs.map((l: any) => <option key={l.code} value={l.code}>{l.code} {l.name ? `- ${l.name}` : ''}</option>)}
                     </select>
                 </div>
                 
                <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Sales Rep Name</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Sales Rep Name</label>
                     <select disabled={user.role_id !== 2 || isLoadingData} value={dashFilters.salesPerson} onChange={(e) => setDashFilters({...dashFilters, salesPerson: e.target.value})} className={`w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 ${user.role_id !== 2 || isLoadingData ? 'bg-slate-50 font-bold cursor-not-allowed opacity-50' : ''}`}>
                         {user.role_id === 2 && <option value="All">All Reps</option>}
                         {user.role_id !== 2 && <option value={user.employee_id}>{user.full_name}</option>}
@@ -315,27 +401,27 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                 </div>
 
                 <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase truncate">Business Partner</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase truncate">Business Partner</label>
                     <select disabled={isLoadingData} value={dashFilters.businessPartner} onChange={(e) => setDashFilters({...dashFilters, businessPartner: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.bps.map(bp => <option key={bp}>{bp}</option>)}</select>
                 </div>
                 <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Brand</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Brand</label>
                     <select disabled={isLoadingData} value={dashFilters.brand} onChange={(e) => setDashFilters({...dashFilters, brand: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.brands.map(b => <option key={b}>{b}</option>)}</select>
                 </div>
             </div>
             <div className="grid grid-cols-5 gap-4 items-end">
-                <div><label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Product Line</label><select disabled={isLoadingData} value={dashFilters.productLine} onChange={(e) => setDashFilters({...dashFilters, productLine: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pLines.map(l => <option key={l}>{l}</option>)}</select></div>
-                <div><label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Product Category</label><select disabled={isLoadingData} value={dashFilters.productCategory} onChange={(e) => setDashFilters({...dashFilters, productCategory: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pCats.map(c => <option key={c}>{c}</option>)}</select></div>
-                <div><label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Product Group</label><select disabled={isLoadingData} value={dashFilters.productGroup} onChange={(e) => setDashFilters({...dashFilters, productGroup: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pGroups.map(g => <option key={g}>{g}</option>)}</select></div>
-                <div><label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Product Model</label><select disabled={isLoadingData} value={dashFilters.productModel} onChange={(e) => setDashFilters({...dashFilters, productModel: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pModels.map(m => <option key={m}>{m}</option>)}</select></div>
-                <div><label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Item Code</label><select disabled={isLoadingData} value={dashFilters.itemCode} onChange={(e) => setDashFilters({...dashFilters, itemCode: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.itemCodes.map(i => <option key={i}>{i}</option>)}</select></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Line</label><select disabled={isLoadingData} value={dashFilters.productLine} onChange={(e) => setDashFilters({...dashFilters, productLine: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pLines.map(l => <option key={l}>{l}</option>)}</select></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Category</label><select disabled={isLoadingData} value={dashFilters.productCategory} onChange={(e) => setDashFilters({...dashFilters, productCategory: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pCats.map(c => <option key={c}>{c}</option>)}</select></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Group</label><select disabled={isLoadingData} value={dashFilters.productGroup} onChange={(e) => setDashFilters({...dashFilters, productGroup: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pGroups.map(g => <option key={g}>{g}</option>)}</select></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Model</label><select disabled={isLoadingData} value={dashFilters.productModel} onChange={(e) => setDashFilters({...dashFilters, productModel: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pModels.map(m => <option key={m}>{m}</option>)}</select></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Item Code</label><select disabled={isLoadingData} value={dashFilters.itemCode} onChange={(e) => setDashFilters({...dashFilters, itemCode: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.itemCodes.map(i => <option key={i}>{i}</option>)}</select></div>
             </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex flex-col md:flex-row gap-8 items-start md:items-center border-b border-slate-100 pb-6 mb-6">
                 <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">Currency</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Currency</label>
                     <div className="flex border border-slate-300 rounded overflow-hidden shadow-sm">
                         {['AED', 'MYR', 'USD'].map((curr: any) => (
                             <button key={curr} onClick={() => setDashCurrency(curr)} className={`px-4 py-1.5 text-xs font-bold transition-colors ${dashCurrency === curr ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50 border-r border-slate-200 last:border-0'}`}>{curr}</button>
@@ -343,49 +429,39 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                     </div>
                 </div>
                 <div className="flex-1 grid grid-cols-6 gap-6 divide-x divide-slate-100">
-                    <div className="text-center px-2"><p className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Forecast Revenue</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.forecastTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-[11px] font-bold text-emerald-600 mb-2 uppercase tracking-wide">Confirmed Revenue</p><p className="text-3xl font-medium text-emerald-600">{fullDashboardData.confirmedTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Actual Revenue</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.actualTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Variance</p><p className={`text-3xl font-light ${(fullDashboardData.actualTotal - fullDashboardData.forecastTotal) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) > 0 ? '+' : '')}{(fullDashboardData.actualTotal - fullDashboardData.forecastTotal).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Achievement %</p><p className={`text-3xl font-light ${(fullDashboardData.forecastTotal > 0 && fullDashboardData.actualTotal >= fullDashboardData.forecastTotal) ? 'text-emerald-500' : 'text-slate-800'}`}>{fullDashboardData.forecastTotal > 0 ? ((fullDashboardData.actualTotal / fullDashboardData.forecastTotal) * 100).toFixed(2) : '0.00'}%</p></div>
-                    <div className="text-center px-2"><p className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Total On Hand</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.totalOnHand.toLocaleString()}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Forecast Revenue</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.forecastTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-emerald-600 mb-2 uppercase tracking-wide">Confirmed Revenue</p><p className="text-3xl font-medium text-emerald-600">{fullDashboardData.confirmedTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Actual Revenue</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.actualTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Variance</p><p className={`text-3xl font-light ${(fullDashboardData.actualTotal - fullDashboardData.forecastTotal) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) > 0 ? '+' : '')}{(fullDashboardData.actualTotal - fullDashboardData.forecastTotal).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Achievement %</p><p className={`text-3xl font-light ${(fullDashboardData.forecastTotal > 0 && fullDashboardData.actualTotal >= fullDashboardData.forecastTotal) ? 'text-emerald-500' : 'text-slate-800'}`}>{fullDashboardData.forecastTotal > 0 ? ((fullDashboardData.actualTotal / fullDashboardData.forecastTotal) * 100).toFixed(2) : '0.00'}%</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Total On Hand</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.totalOnHand.toLocaleString()}</p></div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-4 pb-8">
                 <div className="col-span-1 flex items-center justify-center relative border-r border-slate-100 pr-6">
                     <div className="w-56 h-56 relative shrink-0">
-                        <svg viewBox="0 0 42 42" className="w-full h-full -rotate-90 filter drop-shadow-sm">
-                            <circle cx="21" cy="21" r="15.91549431" fill="transparent" stroke="#f1f5f9" strokeWidth="6" />
-                            {fullDashboardData.repChartData.map((rep, idx) => {
-                                const rawPercent = (rep.actual / fullDashboardData.actualTotal) * 100;
-                                if (rawPercent === 0 || isNaN(rawPercent)) return null;
-                                const percentDraw = Math.max(rawPercent - 0.5, 0); 
-                                const dashArray = `${percentDraw} ${100 - percentDraw}`;
-                                const dashOffset = -currentDonutOffset;
-                                currentDonutOffset += rawPercent;
-
-                                return (
-                                    <circle key={rep.name} cx="21" cy="21" r="15.91549431" fill="transparent" stroke={CHART_COLORS[idx % CHART_COLORS.length]} strokeWidth="6" strokeDasharray={dashArray} strokeDashoffset={dashOffset} className="transition-all duration-300 hover:stroke-[7px] cursor-pointer">
-                                        <title>{rep.name} - {dashCurrency} {rep.actual.toLocaleString()} ({rawPercent.toFixed(2)}%)</title>
-                                    </circle>
-                                );
-                            })}
-                        </svg>
-                        <div className="absolute inset-0 m-auto w-32 h-32 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Actual</span>
-                            <span className="text-xl font-light text-slate-800">{Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(fullDashboardData.actualTotal)}</span>
-                        </div>
+                        {fullDashboardData.actualTotal > 0 ? (
+                            <>
+                                <Doughnut data={repDoughnut} options={doughnutOptions} />
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total Actual</span>
+                                    <span className="text-xl font-light text-slate-800">{compact(fullDashboardData.actualTotal)}</span>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-center"><p className="text-slate-500 italic text-sm">No actual sales for the selected filters.</p></div>
+                        )}
                     </div>
 
-                    <div className="flex flex-col gap-2 ml-6 text-[10px] font-bold text-slate-600">
+                    <div className="flex flex-col gap-2 ml-6 text-[11px] font-bold text-slate-600 max-h-56 overflow-y-auto custom-scrollbar">
                         {fullDashboardData.repChartData.map((rep, idx) => {
                             if (rep.actual === 0) return null;
                             const pct = ((rep.actual / fullDashboardData.actualTotal) * 100).toFixed(2);
                             return (
                                 <div key={rep.name} className="flex items-center gap-2 whitespace-nowrap">
                                     <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}></div>
-                                    <span className="w-8 text-slate-400 font-mono text-right">{pct}%</span>
+                                    <span className="w-10 text-slate-500 font-mono text-right">{pct}%</span>
                                     <span className="truncate max-w-[100px]" title={rep.name}>{rep.name}</span>
                                 </div>
                             );
@@ -393,46 +469,15 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                     </div>
                 </div>
                 
-                <div className="col-span-2 flex flex-col relative h-72 pb-8 pl-12 pr-4">
-                    <div className="absolute top-0 w-full left-0 flex justify-between items-center z-20 px-4">
-                        <p className="text-sm font-bold text-slate-700">Revenue Performance by LOB</p>
-                        <div className="flex gap-4 text-[10px] font-bold text-slate-500 uppercase">
-                            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></div> Forecast</div>
-                            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div> Confirmed</div>
-                            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-purple-600 shadow-sm"></div> Actual Sales</div>
-                        </div>
+                <div className="col-span-2 flex flex-col h-72">
+                    <p className="text-sm font-bold text-slate-700 mb-3 px-1">Revenue Performance by LOB</p>
+                    <div className="flex-1 min-h-0">
+                        {fullDashboardData.lobChartData.length > 0 ? (
+                            <Bar data={lobBar} options={barOptions} />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center"><p className="text-slate-500 italic text-sm">No data available for the selected filters.</p></div>
+                        )}
                     </div>
-                    
-                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pl-12 mt-10">
-                        {[100, 66.66, 33.33, 0].map(pct => {
-                            const val = (maxLOBChartValue * pct) / 100;
-                            return (
-                                <div key={pct} className="flex items-center w-full h-0 border-t border-slate-100 border-dashed">
-                                    <span className="absolute left-0 text-[10px] font-medium text-slate-400 -translate-y-1/2 w-10 text-right pr-2">
-                                        {val > 0 ? Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(val) : '0'}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div className="w-full h-full overflow-x-auto overflow-y-hidden z-10 relative pt-10 pb-2 custom-scrollbar">
-                        <div className="flex items-end h-full gap-6 w-max min-w-full border-b border-slate-200 pb-6 px-8">
-                            {fullDashboardData.lobChartData.length > 0 ? fullDashboardData.lobChartData.map((lobData) => (
-                                <div key={lobData.lobName} className="w-36 flex flex-col items-center justify-end h-full relative group shrink-0">
-                                    <div className="flex items-end h-full gap-1 w-full justify-center">
-                                        <div className="w-10 bg-blue-500 shadow-sm hover:opacity-80 transition-opacity rounded-t-sm" style={{ height: `${(lobData.forecast / maxLOBChartValue) * 100}%` }} title={`Forecast: ${dashCurrency} ${lobData.forecast.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} />
-                                        <div className="w-10 bg-emerald-500 shadow-sm hover:opacity-80 transition-opacity rounded-t-sm" style={{ height: `${((lobData.confirmed || 0) / maxLOBChartValue) * 100}%` }} title={`Confirmed: ${dashCurrency} ${(lobData.confirmed || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} />
-                                        <div className="w-10 bg-purple-600 shadow-sm hover:opacity-80 transition-opacity rounded-t-sm" style={{ height: `${(lobData.actual / maxLOBChartValue) * 100}%` }} title={`Actual: ${dashCurrency} ${lobData.actual.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} />
-                                    </div>
-                                    <div className="absolute -bottom-6 text-center text-[11px] font-bold text-slate-600 truncate w-full px-1">{lobData.lobName}</div>
-                                </div>
-                            )) : (
-                                <div className="w-full h-full flex items-center justify-center"><p className="text-slate-400 italic text-sm">No data available for the selected filters.</p></div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="absolute -bottom-2 w-full text-center text-[11px] font-black text-slate-800 uppercase tracking-widest pl-12">LOB</div>
                 </div>
             </div>
 
@@ -467,7 +512,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                                 </tr>
                             );
                         })}
-                        {fullDashboardData.tableData.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400 italic">No forecast or actual data matches the selected filters.</td></tr>}
+                        {fullDashboardData.tableData.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500 italic">No forecast or actual data matches the selected filters.</td></tr>}
                     </tbody>
                     
                     {fullDashboardData.tableData.length > 0 && (
@@ -487,38 +532,15 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
-            <div className="flex flex-col relative h-72 pb-8 pl-12 pr-4 mb-6">
-                <div className="absolute top-0 w-full left-0 flex justify-between items-center z-20 px-4">
-                    <p className="text-sm font-bold text-slate-700">Forecast by Product Line</p>
+            <div className="flex flex-col h-72 mb-6">
+                <p className="text-sm font-bold text-slate-700 mb-3 px-1">Forecast by Product Line</p>
+                <div className="flex-1 min-h-0">
+                    {fullDashboardData.productLineChartData.length > 0 ? (
+                        <Bar data={plBar} options={plBarOptions} />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center"><p className="text-slate-500 italic text-sm">No forecast data available.</p></div>
+                    )}
                 </div>
-                
-                {/* Background Grid Lines */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pl-12 mt-10">
-                    {[100, 75, 50, 25, 0].map(pct => {
-                        const val = (maxPLChartValue * pct) / 100;
-                        return (
-                            <div key={pct} className="flex items-center w-full h-0 border-t border-slate-100 border-dashed">
-                                <span className="absolute left-0 text-[10px] font-medium text-slate-400 -translate-y-1/2 w-10 text-right pr-2">
-                                    {val > 0 ? Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(val) : '0'}
-                                </span>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                <div className="w-full h-full overflow-x-auto overflow-y-hidden z-10 relative pt-10 pb-2 custom-scrollbar">
-                    <div className="flex items-end h-full gap-8 w-max min-w-full border-b border-slate-200 pb-6 px-8">
-                        {fullDashboardData.productLineChartData.length > 0 ? fullDashboardData.productLineChartData.map((plData) => (
-                            <div key={plData.lineName} className="w-32 flex flex-col items-center justify-end h-full relative group shrink-0">
-                                <div className="w-full bg-[#fdb797] border border-[#e69b7a] shadow-sm hover:opacity-80 transition-opacity" style={{ height: `${maxPLChartValue > 0 ? (plData.forecast / maxPLChartValue) * 100 : 0}%` }} title={`Forecast: ${dashCurrency} ${plData.forecast.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} />
-                                <div className="absolute -bottom-6 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate w-full px-1">{plData.lineName}</div>
-                            </div>
-                        )) : (
-                            <div className="w-full h-full flex items-center justify-center"><p className="text-slate-400 italic text-sm">No forecast data available.</p></div>
-                        )}
-                    </div>
-                </div>
-                <div className="absolute -bottom-2 w-full text-center text-[11px] font-black text-slate-800 uppercase tracking-widest pl-12">Product Line</div>
             </div>
 
             <div className="mt-12 border border-slate-200 rounded-lg overflow-auto max-h-[500px] relative">
@@ -552,7 +574,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                                 </tr>
                             );
                         })}
-                        {fullDashboardData.productModelTableData.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400 italic">No data matches the selected filters.</td></tr>}
+                        {fullDashboardData.productModelTableData.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500 italic">No data matches the selected filters.</td></tr>}
                     </tbody>
                 </table>
             </div>

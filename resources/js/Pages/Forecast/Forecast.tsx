@@ -19,10 +19,11 @@ const NavButton = ({ id, label, icon: Icon, activeTab, isSidebarOpen, onClick }:
   </button>
 );
 
-export default function Forecast({ dbLobs, dbProducts, dbPricingLob, dbPricingMonth, dbEntriesLob, dbEntriesMonth, dbBudgets, dbActualSales }: any) {
+export default function Forecast({ dbLobs, dbProductsLob, dbProductsMonth, dbPricingLob, dbPricingMonth, dbEntriesLob, dbEntriesMonth, dbBudgets, dbActualSales }: any) {
   const user = usePage().props.auth.user as any; 
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('data-entry'); 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
@@ -31,13 +32,28 @@ export default function Forecast({ dbLobs, dbProducts, dbPricingLob, dbPricingMo
   const handleTabChange = (id: string) => {
       setActiveTab(id);
       setSearchTerm('');
+      setMobileNavOpen(false); // close the off-canvas nav after picking a tab on mobile
+  };
+
+  // On desktop the hamburger collapses the rail; on mobile it opens the off-canvas overlay.
+  const toggleNav = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+          setMobileNavOpen((o) => !o);
+      } else {
+          setIsSidebarOpen((o) => !o);
+      }
   };
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden animate-in fade-in duration-300">
       <Head title="Sales Forecast" />
       
-      <aside className={`bg-slate-900 text-white flex flex-col shadow-xl transition-all duration-300 ease-in-out shrink-0 z-20 ${isSidebarOpen ? 'w-64' : 'w-20'}`} style={{ zoom: 0.80 }}>
+      {/* Backdrop for the mobile off-canvas nav */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 z-30 lg:hidden" onClick={() => setMobileNavOpen(false)} aria-hidden="true" />
+      )}
+
+      <aside className={`bg-slate-900 text-white flex flex-col shadow-xl transition-transform duration-300 ease-in-out shrink-0 fixed inset-y-0 left-0 z-40 w-64 transform ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'} lg:static lg:z-20 lg:translate-x-0 lg:transition-all ${isSidebarOpen ? 'lg:w-64' : 'lg:w-20'}`}>
         <div className={`p-6 border-b border-slate-800 flex items-center h-20 transition-all ${isSidebarOpen ? 'gap-3 justify-start' : 'px-0 justify-center'}`}>
              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold shadow-lg shrink-0 hover:bg-blue-500 transition-colors">K</div>
             {isSidebarOpen && (
@@ -78,9 +94,9 @@ export default function Forecast({ dbLobs, dbProducts, dbPricingLob, dbPricingMo
       </aside>
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
-        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm shrink-0" style={{ zoom: 0.80 }}>
+        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm shrink-0">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"><Menu size={20} /></button>
+            <button onClick={toggleNav} aria-label="Toggle navigation" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"><Menu size={20} /></button>
             <h2 className="text-xl font-bold text-gray-800 capitalize">{activeTab.replace('-', ' ')}</h2>
           </div>
           <div className="flex items-center gap-4">
@@ -101,29 +117,33 @@ export default function Forecast({ dbLobs, dbProducts, dbPricingLob, dbPricingMo
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-6" style={{ zoom: 0.80 }}>
-          <>
+        <div className="flex-1 overflow-auto p-6">
+            {/* Data entry stays mounted so unsaved edits survive tab switches */}
             <div className={activeTab === 'data-entry' ? 'block h-full' : 'hidden'}>
-      
-              <SalesDataEntry dbLobs={dbLobs} dbProducts={dbProducts || []} dbPricing={dbPricingLob || []} dbEntries={dbEntriesLob || []} />
+              <SalesDataEntry dbLobs={dbLobs} dbProducts={dbProductsLob || []} dbPricing={dbPricingLob || []} dbEntries={dbEntriesLob || []} />
             </div>
-            <div className={activeTab === 'summary-item' ? 'block h-full' : 'hidden'}>
-      
-              <SummaryByItem isActive={activeTab === 'summary-item'} dbLobs={dbLobs} dbProducts={dbProducts || []} dbPricing={dbPricingMonth || []} dbEntries={dbEntriesMonth || []} searchTerm={searchTerm} user={user} />
-            </div>
-            <div className={activeTab === 'summary-bp' ? 'block h-full' : 'hidden'}>
-      
-              <SummaryByBP isActive={activeTab === 'summary-bp'} dbLobs={dbLobs} dbProducts={dbProducts || []} dbPricing={dbPricingMonth || []} dbEntries={dbEntriesMonth || []} searchTerm={searchTerm} user={user} />
-            </div>
-            <div className={activeTab === 'summary-lob' ? 'block h-full' : 'hidden'}>
-       
-              <SummaryByLOB isActive={activeTab === 'summary-lob'} dbLobs={dbLobs} dbProducts={dbProducts || []} dbPricing={dbPricingMonth || []} dbEntries={dbEntriesMonth || []} searchTerm={searchTerm} user={user} />
-            </div>
-            <div className={activeTab === 'dashboard' ? 'block h-full' : 'hidden'}>
-              
-              <FullDashboard isActive={activeTab === 'dashboard'} dbLobs={dbLobs} dbProducts={dbProducts || []} dbEntries={dbEntriesMonth || []} dbActualSales={dbActualSales || []} dbPricing={dbPricingMonth || []} user={user} />
-            </div>
-              </>
+
+            {/* Read-only tabs mount only when active so their aggregations don't run in the background */}
+            {activeTab === 'summary-item' && (
+              <div className="h-full">
+                <SummaryByItem isActive dbLobs={dbLobs} dbProducts={dbProductsMonth || []} dbPricing={dbPricingMonth || []} dbEntries={dbEntriesMonth || []} searchTerm={searchTerm} user={user} />
+              </div>
+            )}
+            {activeTab === 'summary-bp' && (
+              <div className="h-full">
+                <SummaryByBP isActive dbLobs={dbLobs} dbProducts={dbProductsMonth || []} dbPricing={dbPricingMonth || []} dbEntries={dbEntriesMonth || []} searchTerm={searchTerm} user={user} />
+              </div>
+            )}
+            {activeTab === 'summary-lob' && (
+              <div className="h-full">
+                <SummaryByLOB isActive dbLobs={dbLobs} dbProducts={dbProductsMonth || []} dbPricing={dbPricingMonth || []} dbEntries={dbEntriesMonth || []} searchTerm={searchTerm} user={user} />
+              </div>
+            )}
+            {activeTab === 'dashboard' && (
+              <div className="h-full">
+                <FullDashboard isActive dbLobs={dbLobs} dbProducts={dbProductsMonth || []} dbEntries={dbEntriesMonth || []} dbActualSales={dbActualSales || []} dbPricing={dbPricingMonth || []} user={user} />
+              </div>
+            )}
         </div>
       </main>
     </div>
