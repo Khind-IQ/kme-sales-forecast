@@ -17,9 +17,10 @@ Route::get('/', function () {
 // Protected App Routes (Must be logged in)
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    // Main Dashboard
+    // 'dashboard' is kept as a named route (referenced by the email-verification
+    // flow) but the app's real home is the Forecast tool, so redirect there.
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
+        return redirect()->route('forecast');
     })->name('dashboard');
 
     //  New Sales Forecast Tool
