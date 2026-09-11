@@ -22,3 +22,12 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# ui-ux-pro-max skill (installed via `uipro init --ai kiro`, not tracked)
+/.kiro/steering/banner-design
+/.kiro/steering/brand
+/.kiro/steering/design
+/.kiro/steering/design-system
+/.kiro/steering/slides
+/.kiro/steering/ui-styling
+/.kiro/steering/ui-ux-pro-max
