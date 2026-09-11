@@ -52,50 +52,54 @@ class ForecastController extends Controller
         return Inertia::render('Forecast/Forecast', [
             'dbLobs' => $allowedLobs,
 
-            // fetch only the products needed for the active tab!
-            'dbProducts' => function () use ($requestedLobId, $summaryMonth, $startMonth, $endMonth, $allowedLobIds, $isAdmin, $user) {
-                $query = Product::select(
+            // Products for the Sales Data Entry grid — priced for the selected LOB.
+            // Separate prop from the summary/dashboard products so switching tabs
+            // (which reloads dbProductsMonth) never clobbers the entry grid's data.
+            'dbProductsLob' => function () use ($requestedLobId) {
+                if (!$requestedLobId) return [];
+
+                $pricedProductIds = ProductPrice::where('lob_id', $requestedLobId)
+                    ->orWhereNull('lob_id')
+                    ->pluck('product_id')
+                    ->unique();
+
+                return Product::select(
                     'product_id', 'item_code', 'product_model', 'item_description',
-                'product_category', 'product_line', 'item_group', 'brand',
-                'cogs_price', 'cogs_currency', 'kmi_qty', 'kme_qty', 'total_qty',
-                'avg_12m_sales', 'avg_6m_sales', 'avg_3m_sales'
-                );
+                    'product_category', 'product_line', 'item_group', 'brand',
+                    'cogs_price', 'cogs_currency', 'kmi_qty', 'kme_qty', 'total_qty',
+                    'avg_12m_sales', 'avg_6m_sales', 'avg_3m_sales'
+                )->whereIn('product_id', $pricedProductIds)->get();
+            },
 
+            // Products for the Summary / Dashboard tabs — forecasted or sold within the month/range.
+            'dbProductsMonth' => function () use ($summaryMonth, $startMonth, $endMonth, $allowedLobIds, $isAdmin, $user) {
+                if (!($summaryMonth || ($startMonth && $endMonth))) return [];
 
-                // if Sales Data Entry: only get products priced for this specific LOB
-                if ($requestedLobId) {
-                    $pricedProductIds = ProductPrice::where('lob_id', $requestedLobId)
-                        ->orWhereNull('lob_id')
-                        ->pluck('product_id')
-                        ->unique();
-
-                    return $query->whereIn('product_id', $pricedProductIds)->get();
+                // Forecasted products
+                $planningQuery = UserPlanning::query()->when(!$isAdmin, fn($q) => $q->whereIn('lob_id', $allowedLobIds));
+                if ($summaryMonth) {
+                    $planningQuery->where('planning_month', $summaryMonth);
+                } else {
+                    $planningQuery->whereBetween('planning_month', [$startMonth, $endMonth]);
                 }
+                $forecastProductIds = $planningQuery->pluck('product_id')->toArray();
 
-                if ($summaryMonth || ($startMonth && $endMonth)) {
-                    // Forecasted Products
-                    $planningQuery = UserPlanning::query()->when(!$isAdmin, fn($q) => $q->whereIn('lob_id', $allowedLobIds));
-                    if ($summaryMonth) {
-                        $planningQuery->where('planning_month', $summaryMonth);
-                    } else {
-                        $planningQuery->whereBetween('planning_month', [$startMonth, $endMonth]);
-                    }
-                    $forecastProductIds = $planningQuery->pluck('product_id')->toArray();
-
-                    //Actual Sales Products
-                    $actualQuery = ActualSale::when(!$isAdmin, fn($q) => $q->where('sales_representative_no', $user->employee_id));
-                    if ($startMonth && $endMonth) {
-                        $actualQuery->whereBetween('invoice_date', [$startMonth . '-01', date('Y-m-t', strtotime($endMonth . '-01'))]);
-                    } elseif ($summaryMonth) {
-                        $actualQuery->whereBetween('invoice_date', [$summaryMonth . '-01', date('Y-m-t', strtotime($summaryMonth . '-01'))]);
-                    }
-                    $actualProductIds = $actualQuery->pluck('product_id')->toArray();
-
-                    $activeProductIds = array_unique(array_merge($forecastProductIds, $actualProductIds));
-                    return $query->whereIn('product_id', $activeProductIds)->get();
+                // Products with actual sales
+                $actualQuery = ActualSale::when(!$isAdmin, fn($q) => $q->where('sales_representative_no', $user->employee_id));
+                if ($startMonth && $endMonth) {
+                    $actualQuery->whereBetween('invoice_date', [$startMonth . '-01', date('Y-m-t', strtotime($endMonth . '-01'))]);
+                } elseif ($summaryMonth) {
+                    $actualQuery->whereBetween('invoice_date', [$summaryMonth . '-01', date('Y-m-t', strtotime($summaryMonth . '-01'))]);
                 }
+                $actualProductIds = $actualQuery->pluck('product_id')->toArray();
 
-                return [];
+                $activeProductIds = array_unique(array_merge($forecastProductIds, $actualProductIds));
+                return Product::select(
+                    'product_id', 'item_code', 'product_model', 'item_description',
+                    'product_category', 'product_line', 'item_group', 'brand',
+                    'cogs_price', 'cogs_currency', 'kmi_qty', 'kme_qty', 'total_qty',
+                    'avg_12m_sales', 'avg_6m_sales', 'avg_3m_sales'
+                )->whereIn('product_id', $activeProductIds)->get();
             },
 
             'dbPricingLob' => function () use ($requestedLobId) {
