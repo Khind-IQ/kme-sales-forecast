@@ -35,7 +35,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
   const [productSearchInput, setProductSearchInput] = useState('');
   const [lobSearchInput, setLobSearchInput] = useState(''); 
   const [recentMonthFilter, setRecentMonthFilter] = useState(getNextMonthString());
-  const [edits, setEdits] = useState<Record<number, { qty?: number | '', planPrice?: number | '', confirmedQty?: number | '' }>>({});
+  const [edits, setEdits] = useState<Record<number, { qty?: number | '', planPrice?: number | '', confirmedQty?: number | '', priceUsdRaw?: string }>>({});
 
   // View-only rule: forecasts can only be entered/edited for next month onward
   // (matches the backend validation `after_or_equal:nextMonth`). Selecting the
@@ -140,6 +140,25 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           const current = prev[productId] || {}; 
           const parsedValue = value === '' ? '' : Number(value);
           return { ...prev, [productId]: { ...current, [field]: parsedValue } };
+      });
+  };
+
+  // Plan price entered in AED — canonical value; drop any stale USD raw so the USD box re-derives.
+  const handlePlanPriceAed = (productId: number, value: any) => {
+      setEdits(prev => {
+          const current = { ...(prev[productId] || {}) };
+          delete current.priceUsdRaw;
+          current.planPrice = value === '' ? '' : Number(value);
+          return { ...prev, [productId]: current };
+      });
+  };
+
+  // Plan price entered in USD — convert to AED (canonical) and keep the raw USD text for smooth typing.
+  const handlePlanPriceUsd = (productId: number, value: any) => {
+      setEdits(prev => {
+          const current = prev[productId] || {};
+          const aed = value === '' ? '' : Number((Number(value) * USD_TO_AED_RATE).toFixed(2));
+          return { ...prev, [productId]: { ...current, planPrice: aed, priceUsdRaw: value } };
       });
   };
 
@@ -371,10 +390,11 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Product Model</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Item Code</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Description</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">Price AED</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">COGS AED</th>
+                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">Price (AED)</th>
+                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">COGS (AED)</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center border-l border-l-slate-200 w-32 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]">Forecast Qty</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center w-32">Plan Price AED</th>
+                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center w-32">Plan Price USD</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-emerald-50 text-emerald-700 text-center w-32 border-x border-slate-200">Confirm Qty</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-50 text-slate-800 text-right w-32">Total AED</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-purple-50 text-purple-800 text-right w-32 border-l border-slate-200">GP (AED)</th>
@@ -391,6 +411,10 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             const isPrefilled = prod.saved_qty === '' && prod.prefill_qty !== '' && (!isEditing || editData.qty === undefined);
                             
                             const activePrice = rowPlanPrice !== '' && Number(rowPlanPrice) > 0 ? Number(rowPlanPrice) : prod.master_price_aed;
+                            // USD box: show what the user typed (if editing in USD), else derive from the AED plan price
+                            const rowPlanPriceUsd = (isEditing && editData.priceUsdRaw !== undefined)
+                                ? editData.priceUsdRaw
+                                : (rowPlanPrice !== '' && rowPlanPrice != null ? (Number(rowPlanPrice) / USD_TO_AED_RATE).toFixed(2) : '');
                             const qtyNum = rowQty !== '' ? Number(rowQty) : 0;
                             const totalVal = qtyNum * activePrice;
                             const gpVal = (activePrice - prod.cogs_price_aed) * qtyNum;
@@ -408,20 +432,32 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                                     <td className="px-4 py-2 font-bold text-slate-800">{prod.product_model}</td>
                                     <td className="px-4 py-2 font-mono text-slate-500">{prod.item_code}</td>
                                     <td className="px-4 py-2 text-slate-600 truncate max-w-[200px]" title={prod.item_description}>{prod.item_description}</td>
-                                    <td className="px-4 py-2 text-right font-medium text-slate-500">{prod.master_price_aed > 0 ? prod.master_price_aed.toFixed(2) : '-'}</td>
+                                    <td className="px-4 py-2 text-right font-medium text-slate-600">
+                                        {prod.master_price_aed > 0 ? (
+                                            <div className="flex flex-col">
+                                                <span>{prod.master_price_aed.toFixed(2)}</span>
+                                                <span className="text-[11px] text-slate-500">≈ ${(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
+                                            </div>
+                                        ) : '-'}
+                                    </td>
                                     
-                                    <td className="px-4 py-2 text-right font-medium text-slate-500">
-                                        <div className="flex flex-col">
-                                            <span>{prod.cogs_price_aed > 0 ? prod.cogs_price_aed.toFixed(2) : '-'}</span>
-                                            {prod.is_cogs_usd && prod.cogs_raw > 0 && <span className="text-[11px] text-slate-500">(${prod.cogs_raw.toFixed(2)})</span>}
-                                        </div>
+                                    <td className="px-4 py-2 text-right font-medium text-slate-600">
+                                        {prod.cogs_price_aed > 0 ? (
+                                            <div className="flex flex-col">
+                                                <span>{prod.cogs_price_aed.toFixed(2)}</span>
+                                                <span className="text-[11px] text-slate-500">≈ ${(prod.cogs_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
+                                            </div>
+                                        ) : '-'}
                                     </td>
                                     
                                     <td className="px-3 py-1.5 border-l border-l-slate-100 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.02)]">
                                         <input type="number" min="0" value={rowQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'qty', e.target.value)} placeholder="0" className={`w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-blue-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : ''}`} />
                                     </td>
                                     <td className="px-3 py-1.5">
-                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'planPrice', e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
+                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} disabled={isReadOnly} onChange={(e) => handlePlanPriceAed(prod.product_id, e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
+                                    </td>
+                                    <td className="px-3 py-1.5">
+                                        <input type="number" step="0.01" min="0" value={rowPlanPriceUsd} disabled={isReadOnly} onChange={(e) => handlePlanPriceUsd(prod.product_id, e.target.value)} placeholder={(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
                                     </td>
                                     <td className="px-3 py-1.5 border-x border-slate-200">
                                         <input type="number" min="0" value={rowConfirmedQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'confirmedQty', e.target.value)} placeholder="0" className="w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-emerald-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed" />
@@ -431,14 +467,15 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                                 </tr>
                             );
                         })}
-                        {paginatedData.length === 0 && <tr><td colSpan={12} className="px-4 py-12 text-center text-slate-500 italic">No products found matching your filter.</td></tr>}
+                        {paginatedData.length === 0 && <tr><td colSpan={13} className="px-4 py-12 text-center text-slate-500 italic">No products found matching your filter.</td></tr>}
                     </tbody>
                     {filteredGridProducts.length > 0 && (
                         <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-slate-100 font-bold text-xs text-slate-700">
                             <tr>
                                 <td colSpan={7} className="px-4 py-3 text-right uppercase tracking-wider">Total (All Pages)</td>
                                 <td className="px-3 py-3 text-center text-blue-700 border-l border-slate-200">{gridTotals.totalFcastQty}</td>
-                                <td className="px-3 py-3 text-right text-slate-800 border-x border-slate-200">{gridTotals.totalPlanPrice > 0 ? gridTotals.totalPlanPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-3 py-3 text-right text-slate-800 border-l border-slate-200">{gridTotals.totalPlanPrice > 0 ? gridTotals.totalPlanPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-3 py-3 text-right text-slate-800 border-x border-slate-200">{gridTotals.totalPlanPrice > 0 ? (gridTotals.totalPlanPrice / USD_TO_AED_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 <td className="px-3 py-3 text-center text-emerald-700 border-r border-slate-200">{gridTotals.totalConfQty}</td>
                                 <td className="px-4 py-3 text-right text-slate-800">{gridTotals.totalAed > 0 ? gridTotals.totalAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 <td className="px-4 py-3 text-right text-purple-700 border-l border-slate-200">{gridTotals.totalGp !== 0 ? gridTotals.totalGp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
