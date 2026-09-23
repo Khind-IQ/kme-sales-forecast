@@ -13,12 +13,15 @@ import {
     CategoryScale,
     LinearScale,
     BarElement,
+    BarController,
     LineElement,
+    LineController,
     PointElement,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ChartDataLabels);
+
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, BarController, LineElement, LineController, PointElement, ChartDataLabels);
 ChartJS.defaults.font.family = "'Figtree', ui-sans-serif, system-ui, -apple-system, sans-serif";
 ChartJS.defaults.font.size = 11;
 ChartJS.defaults.color = '#64748b';
