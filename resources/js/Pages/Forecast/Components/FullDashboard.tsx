@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect,useRef } from 'react';
 import { router } from '@inertiajs/react';
-import { Loader2 } from 'lucide-react';
-import MonthPicker from './Shared/MonthPicker';
+import { Loader2, Info } from 'lucide-react';
+import MonthRangePicker from './Shared/MonthRangePicker';
+import SearchableSelect from './Shared/SearchableSelect';
 import { useExchangeRates } from '../Hooks/useExchangeRates';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import {
@@ -12,14 +13,47 @@ import {
     CategoryScale,
     LinearScale,
     BarElement,
+    LineElement,
+    PointElement,
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ChartDataLabels);
+ChartJS.defaults.font.family = "'Figtree', ui-sans-serif, system-ui, -apple-system, sans-serif";
+ChartJS.defaults.font.size = 11;
+ChartJS.defaults.color = '#64748b';
 
-const CHART_COLORS = ['#ec4899', '#8b5cf6', '#4f46e5', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b', '#f97316', '#ef4444', '#14b8a6'];
+// Muted, cohesive categorical palette (rep doughnut + its legend)
+const CHART_COLORS = ['#1e6091', '#468faf', '#52796f', '#e09f3e', '#bc4749', '#6a4c93', '#1a759f', '#b5838d', '#76c893', '#c9ada7'];
 
-export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing = [], dbEntries, dbActualSales = [], user }: any) {
-  const { EXCHANGE_RATES } = useExchangeRates();
+// Series colors for the revenue / GP combo chart
+const SERIES = {
+    actual: '#1e6091',
+    forecast: '#468faf',
+    confirmed: '#76c893',
+    forecastGp: '#e09f3e',
+    actualGp: '#bc4749',
+};
+
+// Shared dark, rounded BI-style tooltip
+const TOOLTIP: any = {
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    titleColor: '#f8fafc',
+    bodyColor: '#e2e8f0',
+    borderColor: 'rgba(148, 163, 184, 0.25)',
+    borderWidth: 1,
+    padding: 12,
+    cornerRadius: 8,
+    usePointStyle: true,
+    boxPadding: 6,
+    titleFont: { size: 12, weight: '600' },
+    bodyFont: { size: 11 },
+};
+const GRID_COLOR = '#eef2f6';
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing = [], dbEntries, dbActualSales = [], dbEntriesYtd = [], dbActualSalesYtd = [], user }: any) {
+  const { EXCHANGE_RATES, USD_TO_AED_RATE } = useExchangeRates();
   const [dashCurrency, setDashCurrency] = useState<'AED' | 'MYR' | 'USD'>('AED');
   const [isLoadingData, setIsLoadingData] = useState(false);
   const fetchedRange = useRef<string | null>(null);
@@ -31,7 +65,9 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
   const [dashFilters, setDashFilters] = useState({
       startMonth: defaultMonth, 
       endMonth: defaultMonth,
-      lob: 'All', salesPerson: user.role_id === 2 ? 'All' : user.employee_id, businessPartner: 'All',
+      // Dashboard data is already access-scoped server-side (by the rep's LOB codes),
+      // so default to "All" reps within that scope for everyone.
+      lob: 'All', salesPerson: 'All', businessPartner: 'All',
       brand: 'All', productLine: 'All', productCategory: 'All', productGroup: 'All', productModel: 'All', itemCode: 'All'
   });
 
@@ -46,7 +82,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
           setIsLoadingData(true);
       }
       router.reload({
-          only: ['dbProductsMonth', 'dbPricingMonth', 'dbEntriesMonth', 'dbActualSales'],
+          only: ['dbDashLobs', 'dbDashProducts', 'dbDashEntries', 'dbDashActualSales'],
           data: { 
               start_month: dashFilters.startMonth, 
               end_month: dashFilters.endMonth,
@@ -61,6 +97,16 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
           }
       });
   }, [dashFilters.startMonth, dashFilters.endMonth, isActive]);
+
+  // Year-to-date data for the monthly chart — fetched once, independent of the month filter.
+  const fetchedYtd = useRef(false);
+  useEffect(() => {
+      if (!isActive || fetchedYtd.current) return;
+      router.reload({
+          only: ['dbDashEntriesYtd', 'dbDashActualSalesYtd'],
+          onFinish: () => { fetchedYtd.current = true; },
+      });
+  }, [isActive]);
 
   const lobsById = useMemo(() => {
       const map = new Map();
@@ -125,6 +171,16 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         }
     }
 
+    // include the selected rep's current LOBs
+    // so their BP/LOB still show in the filters even with no sales
+    if (dashFilters.salesPerson !== 'All') {
+        (dbLobs || []).forEach((lob: any) => {
+            if (String(lob?.sales_representative_no || '').trim() === dashFilters.salesPerson) {
+                activeLobIds.add(Number(lob.lob_id));
+            }
+        });
+    }
+
     (dbLobs || []).forEach((lob: any) => {
         if (lob.sales_representative_no) {
             salesRepsMap.set(String(lob.sales_representative_no).trim(), String(lob.sales_rep_name || lob.sales_representative_no).trim());
@@ -159,7 +215,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
     let forecastTotal = 0; let confirmedTotal = 0; let actualTotal = 0; let totalOnHand = 0;
     const tableGroups: Record<string, any> = {}; 
     const uniqueProductIdsInView = new Set();
-    const lobChartGroups: Record<string, { lobName: string, forecast: number, confirmed: number, actual: number }> = {};
+    const lobChartGroups: Record<string, { lobName: string, forecast: number, confirmed: number, actual: number, forecastGp: number, actualGp: number }> = {};
     const repActuals: Record<string, number> = {};
     const productLineChartGroups: Record<string, { lineName: string, forecast: number }> = {};
     const productModelGroups: Record<string, any> = {};
@@ -196,6 +252,35 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         }
     };
 
+    // Show LOBs the selected rep currently owns even with no forecast/actual activity,
+    // so their assigned business partners appear as a 0/0/0 row (display-only, no DB write).
+    // Only when a specific rep is filtered (Option 1) and no product-level filter is active
+    // (a product filter can't be evaluated against a LOB that has no records).
+    const noProductFilter =
+        dashFilters.brand === 'All' && dashFilters.productLine === 'All' &&
+        dashFilters.productCategory === 'All' && dashFilters.productGroup === 'All' &&
+        dashFilters.productModel === 'All' && dashFilters.itemCode === 'All';
+
+    if (dashFilters.salesPerson !== 'All' && noProductFilter) {
+        (dbLobs || []).forEach((lob: any) => {
+            const ownerNo = String(lob?.sales_representative_no || '').trim();
+            if (!ownerNo || ownerNo !== dashFilters.salesPerson) return;
+            if (dashFilters.lob !== 'All' && lob?.lob_code !== dashFilters.lob) return;
+            if (dashFilters.businessPartner !== 'All' && lob?.sold_to_bp_name !== dashFilters.businessPartner) return;
+            const salesRepName = repNameMap.get(ownerNo) || ownerNo;
+            const rowKey = `lob-${lob.lob_id}-rep-${salesRepName}`;
+            if (!tableGroups[rowKey]) {
+                tableGroups[rowKey] = {
+                    rowKey,
+                    bpName: lob?.sold_to_bp_name || lob?.sold_to_bp || 'Unknown',
+                    lobName: lob?.lob_name || lob?.lob_code || 'Unassigned',
+                    salesRep: salesRepName,
+                    forecast: 0, confirmed: 0, actual: 0,
+                };
+            }
+        });
+    }
+
     for (let i = 0; i < (dbEntries || []).length; i++) {
         const entry = dbEntries[i];
         const lob = lobsById.get(Number(entry.lob_id));
@@ -205,7 +290,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
 
         uniqueProductIdsInView.add(entry.product_id);
         const bpName = lob?.sold_to_bp_name || lob?.sold_to_bp || 'Unknown';
-        const lobName = lob?.lob_name || lob?.lob_code || 'Unknown LOB';
+        const lobName = lob?.lob_name || lob?.lob_code || 'Unassigned';
         const salesRepName = repNameMap.get(String(repNo)) || repNo; 
         
         const product = productsById.get(Number(entry.product_id));
@@ -228,9 +313,15 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         tableGroups[rowKey].forecast += convertedAmount;
         tableGroups[rowKey].confirmed += convertedConfirmedAmount; 
 
-        if (!lobChartGroups[lobName]) lobChartGroups[lobName] = { lobName, forecast: 0, confirmed: 0, actual: 0 };
+        // Forecast gross profit = (plan price - COGS in AED) x planned qty, in display currency
+        const cogsRawF = Number(product?.cogs_price) || 0;
+        const cogsAedF = String(product?.cogs_currency || '').toUpperCase() === 'USD' ? cogsRawF * USD_TO_AED_RATE : cogsRawF;
+        const forecastGp = (priceAed - cogsAedF) * plannedQty * EXCHANGE_RATES[dashCurrency as keyof typeof EXCHANGE_RATES];
+
+        if (!lobChartGroups[lobName]) lobChartGroups[lobName] = { lobName, forecast: 0, confirmed: 0, actual: 0, forecastGp: 0, actualGp: 0 };
         lobChartGroups[lobName].forecast += convertedAmount;
         lobChartGroups[lobName].confirmed += convertedConfirmedAmount;
+        lobChartGroups[lobName].forecastGp += forecastGp;
 
         if (!productLineChartGroups[pLine]) productLineChartGroups[pLine] = { lineName: pLine, forecast: 0 };
         productLineChartGroups[pLine].forecast += convertedAmount;
@@ -249,7 +340,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
 
         uniqueProductIdsInView.add(actual.product_id);
         const bpName = lob?.sold_to_bp_name || lob?.sold_to_bp || 'Unknown';
-        const lobName = lob?.lob_name || lob?.lob_code || 'Unknown LOB';
+        const lobName = lob?.lob_name || lob?.lob_code || 'Unassigned';
         const salesRepName = repNameMap.get(String(repNo)) || repNo;
         
         const product = productsById.get(Number(actual.product_id));
@@ -258,14 +349,20 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         const convertedAmount = Number(actual.sales) * EXCHANGE_RATES[dashCurrency as keyof typeof EXCHANGE_RATES];
         actualTotal += convertedAmount;
 
+        // Actual gross profit = actual sales - (COGS in AED x actual qty), in display currency
+        const cogsRawA = Number(product?.cogs_price) || 0;
+        const cogsAedA = String(product?.cogs_currency || '').toUpperCase() === 'USD' ? cogsRawA * USD_TO_AED_RATE : cogsRawA;
+        const actualGp = (Number(actual.sales) - cogsAedA * Number(actual.quantities || 0)) * EXCHANGE_RATES[dashCurrency as keyof typeof EXCHANGE_RATES];
+
         const rowKey = `lob-${actual.lob_id}-rep-${salesRepName}`;
         if (!tableGroups[rowKey]) {
             tableGroups[rowKey] = { rowKey, bpName, lobName, salesRep: salesRepName, forecast: 0, confirmed: 0, actual: 0 };
         }
         tableGroups[rowKey].actual += convertedAmount;
 
-        if (!lobChartGroups[lobName]) lobChartGroups[lobName] = { lobName, forecast: 0, confirmed: 0, actual: 0 };
+        if (!lobChartGroups[lobName]) lobChartGroups[lobName] = { lobName, forecast: 0, confirmed: 0, actual: 0, forecastGp: 0, actualGp: 0 };
         lobChartGroups[lobName].actual += convertedAmount;
+        lobChartGroups[lobName].actualGp += actualGp;
 
         repActuals[salesRepName] = (repActuals[salesRepName] || 0) + convertedAmount;
         if (!productLineChartGroups[pLine]) productLineChartGroups[pLine] = { lineName: pLine, forecast: 0 };
@@ -286,7 +383,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         productLineChartData: Object.values(productLineChartGroups).sort((a: any, b: any) => b.forecast - a.forecast),
         productModelTableData: Object.values(productModelGroups).sort((a: any, b: any) => a.productModel.localeCompare(b.productModel))
     };
-  }, [dbEntries, dbActualSales, lobsById, productsById, repNameMap, dashFilters, dashCurrency]); 
+  }, [dbEntries, dbActualSales, lobsById, productsById, repNameMap, dashFilters, dashCurrency, dbLobs]); 
 
   // ---- Chart.js datasets (derived from fullDashboardData) ----
   const compact = (v: number) => Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
@@ -300,19 +397,26 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         data: reps.map(r => r.actual),
         backgroundColor: reps.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
         borderColor: '#ffffff',
-        borderWidth: 2,
+        borderWidth: 3,
+        hoverOffset: 6,
       }],
     };
   }, [fullDashboardData.repChartData]);
 
   const lobBar = useMemo(() => {
     const d = fullDashboardData.lobChartData;
+    const barBase = { type: 'bar' as const, yAxisID: 'y', order: 3, borderRadius: 4, borderSkipped: false, maxBarThickness: 26, categoryPercentage: 0.7, barPercentage: 0.92 };
+    const lineBase = { type: 'line' as const, yAxisID: 'yGp', order: 1, borderWidth: 2.5, tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBorderColor: '#fff', pointBorderWidth: 1.5 };
     return {
       labels: d.map(x => x.lobName),
       datasets: [
-        { label: 'Forecast', data: d.map(x => x.forecast), backgroundColor: '#3b82f6', borderRadius: 3 },
-        { label: 'Confirmed', data: d.map(x => x.confirmed || 0), backgroundColor: '#10b981', borderRadius: 3 },
-        { label: 'Actual Sales', data: d.map(x => x.actual), backgroundColor: '#9333ea', borderRadius: 3 },
+        // Bars (left axis): Actual Sales -> Forecast -> Confirmed
+        { ...barBase, label: 'Actual Sales', data: d.map(x => x.actual), backgroundColor: SERIES.actual },
+        { ...barBase, label: 'Forecast', data: d.map(x => x.forecast), backgroundColor: SERIES.forecast },
+        { ...barBase, label: 'Confirmed', data: d.map(x => x.confirmed || 0), backgroundColor: SERIES.confirmed },
+        // GP lines (right axis)
+        { ...lineBase, label: 'Forecast GP', data: d.map(x => x.forecastGp || 0), borderColor: SERIES.forecastGp, backgroundColor: SERIES.forecastGp, pointBackgroundColor: SERIES.forecastGp },
+        { ...lineBase, label: 'Actual GP', data: d.map(x => x.actualGp || 0), borderColor: SERIES.actualGp, backgroundColor: SERIES.actualGp, pointBackgroundColor: SERIES.actualGp, borderDash: [5, 4] },
       ],
     };
   }, [fullDashboardData.lobChartData]);
@@ -321,102 +425,267 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
     const d = fullDashboardData.productLineChartData;
     return {
       labels: d.map(x => x.lineName),
-      datasets: [{ label: 'Forecast', data: d.map(x => x.forecast), backgroundColor: '#fdb797', borderColor: '#e69b7a', borderWidth: 1, borderRadius: 3 }],
+      datasets: [{ label: 'Forecast', data: d.map(x => x.forecast), backgroundColor: SERIES.forecast, borderRadius: 4, borderSkipped: false, maxBarThickness: 44 }],
     };
   }, [fullDashboardData.productLineChartData]);
+
+  // ---- Monthly (year-to-date) aggregation: Jan -> current month, independent of the month filter ----
+  const monthlyChartData = useMemo(() => {
+    const year = new Date().getFullYear();
+    const nowIdx = new Date().getMonth(); // 0-based current month
+    const rate = EXCHANGE_RATES[dashCurrency as keyof typeof EXCHANGE_RATES];
+
+    const map: Record<string, { forecast: number; confirmed: number; actual: number; forecastGp: number; actualGp: number }> = {};
+    const months: string[] = [];
+    for (let m = 0; m <= nowIdx; m++) {
+      const key = `${year}-${String(m + 1).padStart(2, '0')}`;
+      months.push(key);
+      map[key] = { forecast: 0, confirmed: 0, actual: 0, forecastGp: 0, actualGp: 0 };
+    }
+
+    // Same filters as the rest of the dashboard, EXCEPT the month range (this chart is always YTD)
+    const passNonMonth = (lobId: number, productId: number, repNo: string) => {
+      if (dashFilters.salesPerson !== 'All' && repNo !== dashFilters.salesPerson) return false;
+      const lob = lobsById.get(lobId);
+      if (dashFilters.lob !== 'All' && lob?.lob_code !== dashFilters.lob) return false;
+      if (dashFilters.businessPartner !== 'All' && lob?.sold_to_bp_name !== dashFilters.businessPartner) return false;
+      const product = productsById.get(productId);
+      if (dashFilters.brand !== 'All' && product?.brand !== dashFilters.brand) return false;
+      if (dashFilters.productLine !== 'All' && product?.product_line !== dashFilters.productLine) return false;
+      if (dashFilters.productCategory !== 'All' && product?.product_category !== dashFilters.productCategory) return false;
+      if (dashFilters.productGroup !== 'All' && product?.item_group !== dashFilters.productGroup) return false;
+      if (dashFilters.productModel !== 'All' && product?.product_model !== dashFilters.productModel) return false;
+      if (dashFilters.itemCode !== 'All' && product?.item_code !== dashFilters.itemCode) return false;
+      return true;
+    };
+
+    (dbEntriesYtd || []).forEach((entry: any) => {
+      const key = String(entry.planning_month).substring(0, 7);
+      if (!map[key]) return;
+      const lob = lobsById.get(Number(entry.lob_id));
+      const repNo = lob?.sales_representative_no || 'Unknown';
+      if (!passNonMonth(Number(entry.lob_id), Number(entry.product_id), repNo)) return;
+      const product = productsById.get(Number(entry.product_id));
+      const convertedAmount = Number(entry.total_amount) * rate;
+      map[key].forecast += convertedAmount;
+      const plannedQty = Number(entry.planned_quantity || 1);
+      const priceAed = Number(entry.planned_price_aed) || (Number(entry.total_amount) / plannedQty);
+      map[key].confirmed += Number(entry.confirmed_quantity || 0) * priceAed * rate;
+      const cogsRaw = Number(product?.cogs_price) || 0;
+      const cogsAed = String(product?.cogs_currency || '').toUpperCase() === 'USD' ? cogsRaw * USD_TO_AED_RATE : cogsRaw;
+      map[key].forecastGp += (priceAed - cogsAed) * plannedQty * rate;
+    });
+
+    (dbActualSalesYtd || []).forEach((actual: any) => {
+      const key = String(actual.invoice_date).substring(0, 7);
+      if (!map[key]) return;
+      const lob = lobsById.get(Number(actual.lob_id));
+      const repNo = actual.sales_representative_no || lob?.sales_representative_no || 'Unknown';
+      if (!passNonMonth(Number(actual.lob_id), Number(actual.product_id), repNo)) return;
+      const product = productsById.get(Number(actual.product_id));
+      map[key].actual += Number(actual.sales) * rate;
+      const cogsRaw = Number(product?.cogs_price) || 0;
+      const cogsAed = String(product?.cogs_currency || '').toUpperCase() === 'USD' ? cogsRaw * USD_TO_AED_RATE : cogsRaw;
+      map[key].actualGp += (Number(actual.sales) - cogsAed * Number(actual.quantities || 0)) * rate;
+    });
+
+    return months.map(key => ({ month: key, label: MONTHS_SHORT[Number(key.split('-')[1]) - 1], ...map[key] }));
+  }, [dbEntriesYtd, dbActualSalesYtd, lobsById, productsById, dashFilters, dashCurrency, EXCHANGE_RATES, USD_TO_AED_RATE]);
+
+  const monthBar = useMemo(() => {
+    const d = monthlyChartData;
+    const barBase = { type: 'bar' as const, yAxisID: 'y', order: 3, borderRadius: 4, borderSkipped: false, maxBarThickness: 22, categoryPercentage: 0.7, barPercentage: 0.92 };
+    const lineBase = { type: 'line' as const, yAxisID: 'yGp', order: 1, borderWidth: 2.5, tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBorderColor: '#fff', pointBorderWidth: 1.5 };
+    return {
+      labels: d.map(x => x.label),
+      datasets: [
+        { ...barBase, label: 'Actual Sales', data: d.map(x => x.actual), backgroundColor: SERIES.actual },
+        { ...barBase, label: 'Forecast', data: d.map(x => x.forecast), backgroundColor: SERIES.forecast },
+        { ...barBase, label: 'Confirmed', data: d.map(x => x.confirmed), backgroundColor: SERIES.confirmed },
+        { ...lineBase, label: 'Forecast GP', data: d.map(x => x.forecastGp), borderColor: SERIES.forecastGp, backgroundColor: SERIES.forecastGp, pointBackgroundColor: SERIES.forecastGp },
+        { ...lineBase, label: 'Actual GP', data: d.map(x => x.actualGp), borderColor: SERIES.actualGp, backgroundColor: SERIES.actualGp, pointBackgroundColor: SERIES.actualGp, borderDash: [5, 4] },
+      ],
+    };
+  }, [monthlyChartData]);
 
   const doughnutOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '62%',
+    cutout: '68%',
+    layout: { padding: 4 },
     plugins: {
       legend: { display: false },
       tooltip: {
+        ...TOOLTIP,
         callbacks: {
           label: (ctx: any) => {
             const total = fullDashboardData.actualTotal || 1;
             const pct = ((ctx.parsed / total) * 100).toFixed(1);
-            return `${ctx.label}: ${money(ctx.parsed)} (${pct}%)`;
+            return `  ${money(ctx.parsed)}  (${pct}%)`;
           },
+        },
+      },
+      datalabels: {
+        color: '#ffffff',
+        font: { size: 10, weight: '700' },
+        formatter: (val: number) => {
+          const total = fullDashboardData.actualTotal || 1;
+          const pct = (val / total) * 100;
+          return pct >= 6 ? `${pct.toFixed(0)}%` : '';
         },
       },
     },
   };
 
-  const barOptions: any = {
+  // Combo chart (revenue bars on left axis, GP lines on right axis)
+  const lobBarOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
+    animation: { duration: 600, easing: 'easeOutQuart' },
+    layout: { padding: { top: 8 } },
     plugins: {
-      legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true } },
-      tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${money(ctx.parsed.y)}` } },
+      legend: { position: 'top', align: 'end', labels: { boxWidth: 8, boxHeight: 8, padding: 16, usePointStyle: true, pointStyle: 'circle' } },
+      tooltip: { ...TOOLTIP, callbacks: { label: (ctx: any) => `  ${ctx.dataset.label}: ${money(ctx.parsed.y)}` } },
+      datalabels: { display: false },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: (v: any) => compact(Number(v)) } },
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748b', maxRotation: 0, autoSkip: true } },
+      y: {
+        position: 'left', beginAtZero: true,
+        grid: { color: GRID_COLOR }, border: { display: false },
+        ticks: { color: '#94a3b8', callback: (v: any) => compact(Number(v)) },
+        title: { display: true, text: `Revenue (${dashCurrency})`, color: '#94a3b8', font: { size: 10 } },
+      },
+      yGp: {
+        position: 'right', beginAtZero: true,
+        grid: { drawOnChartArea: false }, border: { display: false },
+        ticks: { color: '#94a3b8', callback: (v: any) => compact(Number(v)) },
+        title: { display: true, text: `GP (${dashCurrency})`, color: '#94a3b8', font: { size: 10 } },
+      },
     },
   };
 
   const plBarOptions: any = {
-    ...barOptions,
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 600, easing: 'easeOutQuart' },
+    layout: { padding: { top: 18 } },
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: (ctx: any) => `Forecast: ${money(ctx.parsed.y)}` } },
+      tooltip: { ...TOOLTIP, callbacks: { label: (ctx: any) => `  Forecast: ${money(ctx.parsed.y)}` } },
+      datalabels: { anchor: 'end', align: 'end', offset: 2, color: '#475569', font: { size: 10, weight: '600' }, formatter: (v: number) => v > 0 ? compact(v) : '' },
+    },
+    scales: {
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748b', maxRotation: 0, autoSkip: true } },
+      y: { beginAtZero: true, grid: { color: GRID_COLOR }, border: { display: false }, ticks: { color: '#94a3b8', callback: (v: any) => compact(Number(v)) } },
     },
   };
+
+  // ---- Empty-state helpers: explain zero results instead of showing a blank/0 dashboard ----
+  const fmtMonth = (v: string) => {
+    if (!v) return '';
+    const [y, m] = v.split('-');
+    const idx = Number(m) - 1;
+    return idx >= 0 && idx < 12 ? `${MONTHS_SHORT[idx]} ${y}` : v;
+  };
+  const periodLabel = (() => {
+    const s = fmtMonth(dashFilters.startMonth);
+    const e = fmtMonth(dashFilters.endMonth);
+    if (!s && !e) return 'the selected period';
+    if (s && e && s !== e) return `${s} – ${e}`;
+    return s || e;
+  })();
+  const repLabel = dashFilters.salesPerson === 'All'
+    ? 'all reps'
+    : (repNameMap.get(String(dashFilters.salesPerson))
+        || (String(user.employee_id) === String(dashFilters.salesPerson) ? user.full_name : dashFilters.salesPerson));
+  const hasNoData = !isLoadingData
+    && fullDashboardData.forecastTotal === 0
+    && fullDashboardData.actualTotal === 0
+    && fullDashboardData.confirmedTotal === 0;
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300 pb-12" aria-busy={isLoadingData}>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="grid grid-cols-6 gap-4 items-end mb-4">
-                {/* DATE FILTERS */}
-                <div>
+                {/* DATE RANGE FILTER */}
+                <div className="col-span-2">
                     <label className="flex items-center gap-2 text-[11px] font-bold text-slate-500 mb-1 uppercase">
-                        From Month
+                        Period
                         {isLoadingData && <Loader2 size={12} className="animate-spin text-blue-500" />}
                     </label>
-                    <MonthPicker disabled={isLoadingData} value={dashFilters.startMonth} onChange={(v) => setDashFilters({...dashFilters, startMonth: v})} max={dashFilters.endMonth || undefined} className="w-full text-xs border border-slate-200 rounded py-1.5 px-2 text-left text-slate-700 font-bold bg-white hover:border-slate-300 disabled:opacity-50" />
-                </div>
-                <div>
-                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-500 mb-1 uppercase">
-                        To Month
-                        {isLoadingData && <Loader2 size={12} className="animate-spin text-blue-500" />}
-                    </label>
-                    <MonthPicker disabled={isLoadingData} value={dashFilters.endMonth} onChange={(v) => setDashFilters({...dashFilters, endMonth: v})} min={dashFilters.startMonth || undefined} className="w-full text-xs border border-slate-200 rounded py-1.5 px-2 text-left text-slate-700 font-bold bg-white hover:border-slate-300 disabled:opacity-50" />
+                    <MonthRangePicker
+                        disabled={isLoadingData}
+                        value={{ start: dashFilters.startMonth, end: dashFilters.endMonth }}
+                        onChange={(v) => setDashFilters({ ...dashFilters, startMonth: v.start, endMonth: v.end })}
+                        className="w-full text-xs border border-slate-200 rounded py-1.5 px-2 text-left text-slate-700 font-bold bg-white hover:border-slate-300 disabled:opacity-50"
+                    />
                 </div>
                 <div>
                     <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">LOB</label>
-                    <select disabled={isLoadingData} value={dashFilters.lob} onChange={(e) => setDashFilters({...dashFilters, lob: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50">
-                        <option value="All">All</option>{dashboardFilterOptions.lobs.map((l: any) => <option key={l.code} value={l.code}>{l.code} {l.name ? `- ${l.name}` : ''}</option>)}
-                    </select>
+                    <SearchableSelect
+                        disabled={isLoadingData}
+                        value={dashFilters.lob}
+                        onChange={(v) => setDashFilters({ ...dashFilters, lob: v })}
+                        allLabel="All"
+                        options={dashboardFilterOptions.lobs.map((l: any) => ({ value: l.code, label: `${l.code}${l.name ? ` - ${l.name}` : ''}` }))}
+                    />
                 </div>
-                
+
                <div>
                     <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Sales Rep Name</label>
-                    <select disabled={user.role_id !== 2 || isLoadingData} value={dashFilters.salesPerson} onChange={(e) => setDashFilters({...dashFilters, salesPerson: e.target.value})} className={`w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 ${user.role_id !== 2 || isLoadingData ? 'bg-slate-50 font-bold cursor-not-allowed opacity-50' : ''}`}>
-                        {user.role_id === 2 && <option value="All">All Reps</option>}
-                        {user.role_id !== 2 && <option value={user.employee_id}>{user.full_name}</option>}
-                        {user.role_id === 2 && dashboardFilterOptions.salesReps.map((rep: any) => <option key={rep.id} value={rep.id}>{rep.name}</option>)}
-                    </select>
+                    <SearchableSelect
+                        disabled={isLoadingData}
+                        value={dashFilters.salesPerson}
+                        onChange={(v) => setDashFilters({ ...dashFilters, salesPerson: v })}
+                        allLabel="All Reps"
+                        emptyLabel="No reps in your LOB-code scope"
+                        options={dashboardFilterOptions.salesReps.map((rep: any) => ({ value: rep.id, label: rep.name }))}
+                    />
                 </div>
 
                 <div>
                     <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase truncate">Business Partner</label>
-                    <select disabled={isLoadingData} value={dashFilters.businessPartner} onChange={(e) => setDashFilters({...dashFilters, businessPartner: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.bps.map(bp => <option key={bp}>{bp}</option>)}</select>
+                    <SearchableSelect
+                        disabled={isLoadingData}
+                        value={dashFilters.businessPartner}
+                        onChange={(v) => setDashFilters({ ...dashFilters, businessPartner: v })}
+                        allLabel="All"
+                        options={dashboardFilterOptions.bps.map(bp => ({ value: bp, label: bp }))}
+                    />
                 </div>
                 <div>
                     <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Brand</label>
-                    <select disabled={isLoadingData} value={dashFilters.brand} onChange={(e) => setDashFilters({...dashFilters, brand: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.brands.map(b => <option key={b}>{b}</option>)}</select>
+                    <SearchableSelect
+                        disabled={isLoadingData}
+                        value={dashFilters.brand}
+                        onChange={(v) => setDashFilters({ ...dashFilters, brand: v })}
+                        allLabel="All"
+                        align="right"
+                        emptyLabel="No brands for the current rep / period"
+                        options={dashboardFilterOptions.brands.map(b => ({ value: b, label: b }))}
+                    />
                 </div>
             </div>
             <div className="grid grid-cols-5 gap-4 items-end">
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Line</label><select disabled={isLoadingData} value={dashFilters.productLine} onChange={(e) => setDashFilters({...dashFilters, productLine: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pLines.map(l => <option key={l}>{l}</option>)}</select></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Category</label><select disabled={isLoadingData} value={dashFilters.productCategory} onChange={(e) => setDashFilters({...dashFilters, productCategory: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pCats.map(c => <option key={c}>{c}</option>)}</select></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Group</label><select disabled={isLoadingData} value={dashFilters.productGroup} onChange={(e) => setDashFilters({...dashFilters, productGroup: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pGroups.map(g => <option key={g}>{g}</option>)}</select></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Model</label><select disabled={isLoadingData} value={dashFilters.productModel} onChange={(e) => setDashFilters({...dashFilters, productModel: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.pModels.map(m => <option key={m}>{m}</option>)}</select></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Item Code</label><select disabled={isLoadingData} value={dashFilters.itemCode} onChange={(e) => setDashFilters({...dashFilters, itemCode: e.target.value})} className="w-full text-xs border-slate-200 rounded py-1.5 focus:ring-blue-500 text-slate-700 disabled:opacity-50"><option>All</option>{dashboardFilterOptions.itemCodes.map(i => <option key={i}>{i}</option>)}</select></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Line</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productLine} onChange={(v) => setDashFilters({ ...dashFilters, productLine: v })} allLabel="All" emptyLabel="No product lines for the current selection" options={dashboardFilterOptions.pLines.map(l => ({ value: l, label: l }))} /></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Category</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productCategory} onChange={(v) => setDashFilters({ ...dashFilters, productCategory: v })} allLabel="All" emptyLabel="No categories for the current selection" options={dashboardFilterOptions.pCats.map(c => ({ value: c, label: c }))} /></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Group</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productGroup} onChange={(v) => setDashFilters({ ...dashFilters, productGroup: v })} allLabel="All" emptyLabel="No groups for the current selection" options={dashboardFilterOptions.pGroups.map(g => ({ value: g, label: g }))} /></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Model</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productModel} onChange={(v) => setDashFilters({ ...dashFilters, productModel: v })} allLabel="All" align="right" emptyLabel="No models for the current selection" options={dashboardFilterOptions.pModels.map(m => ({ value: m, label: m }))} /></div>
+                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Item Code</label><SearchableSelect disabled={isLoadingData} value={dashFilters.itemCode} onChange={(v) => setDashFilters({ ...dashFilters, itemCode: v })} allLabel="All" align="right" emptyLabel="No item codes for the current selection" options={dashboardFilterOptions.itemCodes.map(i => ({ value: i, label: i }))} /></div>
             </div>
         </div>
+
+        {hasNoData && (
+            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 shadow-sm">
+                <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                    <p className="font-semibold">No forecast or actual sales for <span className="underline decoration-amber-300 underline-offset-2">{repLabel}</span> in {periodLabel}.</p>
+                    <p className="text-amber-700/90 mt-0.5">Try widening the period or choosing a different sales rep{dashFilters.salesPerson !== 'All' ? '' : ' / filter'}.</p>
+                </div>
+            </div>
+        )}
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex flex-col md:flex-row gap-8 items-start md:items-center border-b border-slate-100 pb-6 mb-6">
@@ -473,7 +742,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                     <p className="text-sm font-bold text-slate-700 mb-3 px-1">Revenue Performance by LOB</p>
                     <div className="flex-1 min-h-0">
                         {fullDashboardData.lobChartData.length > 0 ? (
-                            <Bar data={lobBar} options={barOptions} />
+                            <Bar data={lobBar as any} options={lobBarOptions} />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center"><p className="text-slate-500 italic text-sm">No data available for the selected filters.</p></div>
                         )}
@@ -485,6 +754,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                 <table className="w-full text-xs text-right whitespace-nowrap">
                     <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 sticky top-0 z-20 shadow-sm">
                         <tr>
+                            <th className="px-4 py-3 text-center w-12">No</th>
                             <th className="px-4 py-3 text-left">Sales Rep Name</th>
                             <th className="px-4 py-3 text-left">LOB</th>
                             <th className="px-4 py-3 text-left">Business Partner</th>
@@ -496,11 +766,12 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {fullDashboardData.tableData.map((row: any) => {
+                        {fullDashboardData.tableData.map((row: any, idx: number) => {
                             const isPos = (row.actual - row.forecast) >= 0;
                             const pct = row.forecast > 0 ? ((row.actual / row.forecast) * 100).toFixed(2) : '0.00';
                             return (
                                 <tr key={row.rowKey} className="hover:bg-slate-50">
+                                    <td className="px-4 py-2.5 font-mono text-slate-400 text-center">{idx + 1}</td>
                                     <td className="px-4 py-2.5 font-bold text-slate-500 text-left">{row.salesRep}</td>
                                     <td className="px-4 py-2.5 font-bold text-slate-700 text-left">{row.lobName}</td>
                                     <td className="px-4 py-2.5 text-slate-600 text-left truncate max-w-[250px]" title={row.bpName}>{row.bpName}</td>
@@ -512,13 +783,13 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                                 </tr>
                             );
                         })}
-                        {fullDashboardData.tableData.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500 italic">No forecast or actual data matches the selected filters.</td></tr>}
+                        {fullDashboardData.tableData.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500 italic">No forecast or actual data matches the selected filters.</td></tr>}
                     </tbody>
                     
                     {fullDashboardData.tableData.length > 0 && (
                         <tfoot className="sticky bottom-0 z-20 bg-slate-100 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] border-t-2 border-slate-200">
                             <tr className="font-bold">
-                                <td colSpan={3} className="px-4 py-3 text-left text-slate-800">Total</td>
+                                <td colSpan={4} className="px-4 py-3 text-left text-slate-800">Total</td>
                                 <td className="px-4 py-3 font-mono text-slate-800">{fullDashboardData.forecastTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 <td className="px-4 py-3 font-mono text-emerald-600">{fullDashboardData.confirmedTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 <td className="px-4 py-3 font-mono text-slate-800">{fullDashboardData.actualTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
@@ -528,6 +799,20 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                         </tfoot>
                     )}
                 </table>
+            </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
+            <div className="flex flex-col h-80">
+                <p className="text-sm font-bold text-slate-700 mb-0.5 px-1">Revenue &amp; GP by Month</p>
+                <p className="text-[11px] text-slate-500 mb-3 px-1">Current year to date ({currentYear}) — independent of the month filter above</p>
+                <div className="flex-1 min-h-0">
+                    {monthlyChartData.some(x => x.forecast || x.actual || x.confirmed) ? (
+                        <Bar data={monthBar as any} options={lobBarOptions} />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center"><p className="text-slate-500 italic text-sm">No data for {currentYear} yet.</p></div>
+                    )}
+                </div>
             </div>
         </div>
 
@@ -547,6 +832,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                 <table className="w-full text-xs text-right whitespace-nowrap">
                     <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 sticky top-0 z-20 shadow-sm">
                         <tr>
+                            <th className="px-4 py-3 text-center w-12">No</th>
                             <th className="px-4 py-3 text-left">Product Model</th>
                             <th className="px-4 py-3">Forecast Quantity</th>
                             <th className="px-4 py-3">Forecast Amount</th>
@@ -559,9 +845,10 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {fullDashboardData.productModelTableData.map(row => {
+                        {fullDashboardData.productModelTableData.map((row, idx: number) => {
                             return (
                                 <tr key={row.productModel} className="hover:bg-slate-50">
+                                    <td className="px-4 py-2.5 font-mono text-slate-400 text-center">{idx + 1}</td>
                                     <td className="px-4 py-2.5 font-bold text-slate-600 text-left">{row.productModel}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.forecastQty.toLocaleString()}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.forecastAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
@@ -574,7 +861,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                                 </tr>
                             );
                         })}
-                        {fullDashboardData.productModelTableData.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500 italic">No data matches the selected filters.</td></tr>}
+                        {fullDashboardData.productModelTableData.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-slate-500 italic">No data matches the selected filters.</td></tr>}
                     </tbody>
                 </table>
             </div>

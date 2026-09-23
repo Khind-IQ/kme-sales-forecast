@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { router, usePage } from '@inertiajs/react'; 
 import Select from 'react-select'; 
-import { Save, CheckCircle2, Download, Search, Loader2, Lock, AlertCircle, Info } from 'lucide-react';
+import { Save, CheckCircle2, Download, Search, Loader2, Lock, AlertCircle, Info, Plus, X, Trash2 } from 'lucide-react';
 
 // shared  Utilities & Hooks
 import { getNextMonthString, getPreviousMonthString } from '../Utils/helpers';
@@ -22,7 +22,7 @@ const customSelectStyles = {
     option: (base: any) => ({ ...base, fontSize: '13px', padding: '6px 10px' })
 };
 
-export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntries }: any) {
+export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntries, dbAddableProducts = [] }: any) {
   const user = usePage().props.auth.user as any; 
   const { EXCHANGE_RATES, USD_TO_AED_RATE } = useExchangeRates();
 
@@ -35,7 +35,16 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
   const [productSearchInput, setProductSearchInput] = useState('');
   const [lobSearchInput, setLobSearchInput] = useState(''); 
   const [recentMonthFilter, setRecentMonthFilter] = useState(getNextMonthString());
-  const [edits, setEdits] = useState<Record<number, { qty?: number | '', planPrice?: number | '', confirmedQty?: number | '' }>>({});
+  const [edits, setEdits] = useState<Record<number, { qty?: number | '', planPrice?: number | '', confirmedQty?: number | '', priceUsdRaw?: string }>>({});
+
+  // "Add Model to Forecast": models the rep manually adds to this BP's grid.
+  // Purely client-side until saved — a refresh clears unsaved additions.
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isLoadingAddable, setIsLoadingAddable] = useState(false);
+  const [addedProducts, setAddedProducts] = useState<any[]>([]);
+
+  // Reset manual additions whenever the BP or forecast month changes (they're BP/month-specific).
+  useEffect(() => { setAddedProducts([]); }, [selectedLob, planningMonth]);
 
   // View-only rule: forecasts can only be entered/edited for next month onward
   // (matches the backend validation `after_or_equal:nextMonth`). Selecting the
@@ -113,15 +122,40 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
       });
   }, [selectedLob, planningMonth, dbProducts, dbPricing, dbEntries, isReadOnly, USD_TO_AED_RATE]);
 
+  // Manually-added models, shaped like grid rows. Excludes any that are already in the
+  // base grid (can't add a duplicate). Uses the resolved reference price as the list price.
+  const addedRows = useMemo(() => {
+      if (addedProducts.length === 0) return [];
+      const baseIds = new Set(baseGridProducts.map((p: any) => p.product_id));
+      return addedProducts
+          .filter((prod: any) => !baseIds.has(prod.product_id))
+          .map((prod: any) => {
+              const cogsRaw = Number(prod.cogs_price) || 0;
+              const isCogsUsd = (prod.cogs_currency || '').toUpperCase() === 'USD';
+              const cogsPriceAed = isCogsUsd ? (cogsRaw * USD_TO_AED_RATE) : cogsRaw;
+              return {
+                  ...prod,
+                  master_price_aed: Number(prod.resolved_price || 0),
+                  cogs_price_aed: cogsPriceAed, cogs_raw: cogsRaw, is_cogs_usd: isCogsUsd,
+                  saved_qty: '', saved_price: '', saved_confirmed_qty: '',
+                  prefill_qty: '', prefill_price: '', prefill_confirmed_qty: '',
+                  is_added: true,
+              };
+          });
+  }, [addedProducts, baseGridProducts, USD_TO_AED_RATE]);
+
+  // Full grid = manually-added rows on top, then the normal priced rows.
+  const gridProducts = useMemo(() => [...addedRows, ...baseGridProducts], [addedRows, baseGridProducts]);
+
   const filteredGridProducts = useMemo(() => {
-      if (!productSearchInput.trim()) return baseGridProducts;
+      if (!productSearchInput.trim()) return gridProducts;
       const lower = productSearchInput.toLowerCase();
-      return baseGridProducts.filter((p: any) => 
+      return gridProducts.filter((p: any) => 
           (p.product_model || '').toLowerCase().includes(lower) || 
           (p.item_code || '').toLowerCase().includes(lower) ||
           (p.item_description || '').toLowerCase().includes(lower)
       );
-  }, [baseGridProducts, productSearchInput]);
+  }, [gridProducts, productSearchInput]);
 
   //  Custom Pagination Hook
   const { currentPage, totalPages, paginatedData, goToNextPage, goToPrevPage, setCurrentPage } = usePagination(filteredGridProducts, 100);
@@ -143,9 +177,62 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
       });
   };
 
+  // Plan price entered in AED — canonical value; drop any stale USD raw so the USD box re-derives.
+  const handlePlanPriceAed = (productId: number, value: any) => {
+      setEdits(prev => {
+          const current = { ...(prev[productId] || {}) };
+          delete current.priceUsdRaw;
+          current.planPrice = value === '' ? '' : Number(value);
+          return { ...prev, [productId]: current };
+      });
+  };
+
+  // Plan price entered in USD — convert to AED (canonical) and keep the raw USD text for smooth typing.
+  const handlePlanPriceUsd = (productId: number, value: any) => {
+      setEdits(prev => {
+          const current = prev[productId] || {};
+          const aed = value === '' ? '' : Number((Number(value) * USD_TO_AED_RATE).toFixed(2));
+          return { ...prev, [productId]: { ...current, planPrice: aed, priceUsdRaw: value } };
+      });
+  };
+
+  // Open the "Add Model" picker and lazily fetch the priced-product list for this LOB.
+  const openAddModal = () => {
+      if (!selectedLob || isReadOnly) return;
+      setShowAddModal(true);
+      setIsLoadingAddable(true);
+      router.reload({
+          only: ['dbAddableProducts'],
+          data: { lob_id: selectedLob },
+          onFinish: () => setIsLoadingAddable(false),
+      });
+  };
+
+  const addModel = (product: any) => {
+      if (!product) return;
+      setAddedProducts(prev => prev.some(p => p.product_id === product.product_id) ? prev : [...prev, product]);
+  };
+
+  const removeAddedModel = (productId: number) => {
+      setAddedProducts(prev => prev.filter(p => p.product_id !== productId));
+      setEdits(prev => { const next = { ...prev }; delete next[productId]; return next; });
+  };
+
+  // Priced models not already in the grid — options for the Add Model picker.
+  const addableOptions = useMemo(() => {
+      const existing = new Set(gridProducts.map((p: any) => p.product_id));
+      return (dbAddableProducts || [])
+          .filter((p: any) => !existing.has(p.product_id))
+          .map((p: any) => ({
+              value: p.product_id,
+              label: `${p.product_model || p.item_code} — ${p.item_code} (suggested AED ${Number(p.resolved_price || 0).toFixed(2)})`,
+              product: p,
+          }));
+  }, [dbAddableProducts, gridProducts]);
+
   const pendingSavesCount = useMemo(() => {
       let count = 0;
-      baseGridProducts.forEach((prod: any) => {
+      gridProducts.forEach((prod: any) => {
           const editData = edits[prod.product_id];
           const hasEdit = editData !== undefined;
           const rowQty = hasEdit && editData.qty !== undefined ? editData.qty : (prod.saved_qty !== '' ? prod.saved_qty : prod.prefill_qty);
@@ -162,7 +249,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           if ((isQtyChanged || isPriceChanged || isConfirmedQtyChanged || isUnsavedPrefill) && (rowQty !== '' && Number(rowQty) > 0)) count++;
       });
       return count;
-  }, [baseGridProducts, edits]);
+  }, [gridProducts, edits]);
 
   const gridTotals = useMemo(() => {
       let totalFcastQty = 0, totalConfQty = 0, totalPlanPrice = 0, totalAed = 0, totalGp = 0;
@@ -195,7 +282,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
       if (isReadOnly) return showNotification('This month is view-only. Select next month or later to edit.', 'info');
 
       const payloadEntries: any[] = [];
-      baseGridProducts.forEach((prod: any) => {
+      gridProducts.forEach((prod: any) => {
           const editData = edits[prod.product_id];
           const hasEdit = editData !== undefined;
           const rowQty = hasEdit && editData.qty !== undefined ? editData.qty : (prod.saved_qty !== '' ? prod.saved_qty : prod.prefill_qty);
@@ -225,6 +312,15 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
               setEdits({}); 
               setRecentMonthFilter(planningMonth); 
               setIsSaving(false);
+              // Refresh this LOB's grid so any newly-added models come back as real,
+              // persisted rows (and clear the client-only "added" list to avoid dupes).
+              setAddedProducts([]);
+              if (selectedLob) {
+                  router.reload({
+                      only: ['dbProductsLob', 'dbPricingLob', 'dbEntriesLob'],
+                      data: { lob_id: selectedLob },
+                  });
+              }
           },
           onError: () => { showNotification('Error saving entries.', 'error'); setIsSaving(false); }
       });
@@ -311,7 +407,19 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
               )}
               
               <div className="flex-1"></div>
-              
+
+              {!isReadOnly && (
+                  <button
+                      type="button"
+                      onClick={openAddModal}
+                      disabled={!selectedLob || isLoadingData}
+                      className="h-[36px] px-4 rounded-lg font-bold text-sm border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
+                      title={!selectedLob ? 'Select a Business Partner first' : 'Add a model to this forecast'}
+                  >
+                      <Plus size={16} /> Add Model
+                  </button>
+              )}
+
               {isReadOnly ? (
                   <div className="h-[36px] px-6 rounded-lg font-bold text-sm flex items-center justify-center gap-2 bg-slate-100 text-slate-500 border border-slate-200 whitespace-nowrap cursor-not-allowed">
                       <Lock size={16} /> Saving disabled
@@ -371,10 +479,11 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Product Model</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Item Code</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Description</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">Price AED</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">COGS AED</th>
+                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">Price (AED)</th>
+                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">COGS (AED)</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center border-l border-l-slate-200 w-32 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]">Forecast Qty</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center w-32">Plan Price AED</th>
+                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center w-32">Plan Price USD</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-emerald-50 text-emerald-700 text-center w-32 border-x border-slate-200">Confirm Qty</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-50 text-slate-800 text-right w-32">Total AED</th>
                             <th className="border-b border-slate-200 px-4 py-3 font-bold bg-purple-50 text-purple-800 text-right w-32 border-l border-slate-200">GP (AED)</th>
@@ -391,6 +500,10 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             const isPrefilled = prod.saved_qty === '' && prod.prefill_qty !== '' && (!isEditing || editData.qty === undefined);
                             
                             const activePrice = rowPlanPrice !== '' && Number(rowPlanPrice) > 0 ? Number(rowPlanPrice) : prod.master_price_aed;
+                            // USD box: show what the user typed (if editing in USD), else derive from the AED plan price
+                            const rowPlanPriceUsd = (isEditing && editData.priceUsdRaw !== undefined)
+                                ? editData.priceUsdRaw
+                                : (rowPlanPrice !== '' && rowPlanPrice != null ? (Number(rowPlanPrice) / USD_TO_AED_RATE).toFixed(2) : '');
                             const qtyNum = rowQty !== '' ? Number(rowQty) : 0;
                             const totalVal = qtyNum * activePrice;
                             const gpVal = (activePrice - prod.cogs_price_aed) * qtyNum;
@@ -402,26 +515,45 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             const isRowModified = isQtyChanged || isPriceChanged || isConfirmedQtyChanged;
 
                             return (
-                                <tr key={prod.product_id} className={`transition-colors ${isRowModified ? 'bg-blue-100/70 hover:bg-blue-100' : 'hover:bg-slate-50'}`}>
-                                    <td className="px-4 py-2 font-mono text-slate-500 text-center">{actualIdx}</td>
+                                <tr key={prod.product_id} className={`transition-colors ${isRowModified ? 'bg-blue-100/70 hover:bg-blue-100' : prod.is_added ? 'bg-indigo-50/60 hover:bg-indigo-50' : 'hover:bg-slate-50'}`}>
+                                    <td className="px-4 py-2 font-mono text-slate-500 text-center">
+                                        {prod.is_added && !isReadOnly ? (
+                                            <button type="button" onClick={() => removeAddedModel(prod.product_id)} title="Remove this added model" className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+                                        ) : actualIdx}
+                                    </td>
                                     <td className="px-4 py-2 font-medium text-slate-700 truncate max-w-[120px]">{currentLobName}</td>
-                                    <td className="px-4 py-2 font-bold text-slate-800">{prod.product_model}</td>
+                                    <td className="px-4 py-2 font-bold text-slate-800">
+                                        {prod.is_added && <span className="inline-flex items-center mr-2 px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-wide align-middle">New</span>}
+                                        {prod.product_model}
+                                    </td>
                                     <td className="px-4 py-2 font-mono text-slate-500">{prod.item_code}</td>
                                     <td className="px-4 py-2 text-slate-600 truncate max-w-[200px]" title={prod.item_description}>{prod.item_description}</td>
-                                    <td className="px-4 py-2 text-right font-medium text-slate-500">{prod.master_price_aed > 0 ? prod.master_price_aed.toFixed(2) : '-'}</td>
+                                    <td className="px-4 py-2 text-right font-medium text-slate-600">
+                                        {prod.master_price_aed > 0 ? (
+                                            <div className="flex flex-col">
+                                                <span>{prod.master_price_aed.toFixed(2)}</span>
+                                                <span className="text-[11px] text-slate-500">≈ ${(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
+                                            </div>
+                                        ) : '-'}
+                                    </td>
                                     
-                                    <td className="px-4 py-2 text-right font-medium text-slate-500">
-                                        <div className="flex flex-col">
-                                            <span>{prod.cogs_price_aed > 0 ? prod.cogs_price_aed.toFixed(2) : '-'}</span>
-                                            {prod.is_cogs_usd && prod.cogs_raw > 0 && <span className="text-[11px] text-slate-500">(${prod.cogs_raw.toFixed(2)})</span>}
-                                        </div>
+                                    <td className="px-4 py-2 text-right font-medium text-slate-600">
+                                        {prod.cogs_price_aed > 0 ? (
+                                            <div className="flex flex-col">
+                                                <span>{prod.cogs_price_aed.toFixed(2)}</span>
+                                                <span className="text-[11px] text-slate-500">≈ ${(prod.cogs_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
+                                            </div>
+                                        ) : '-'}
                                     </td>
                                     
                                     <td className="px-3 py-1.5 border-l border-l-slate-100 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.02)]">
                                         <input type="number" min="0" value={rowQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'qty', e.target.value)} placeholder="0" className={`w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-blue-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : ''}`} />
                                     </td>
                                     <td className="px-3 py-1.5">
-                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'planPrice', e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
+                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} disabled={isReadOnly} onChange={(e) => handlePlanPriceAed(prod.product_id, e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
+                                    </td>
+                                    <td className="px-3 py-1.5">
+                                        <input type="number" step="0.01" min="0" value={rowPlanPriceUsd} disabled={isReadOnly} onChange={(e) => handlePlanPriceUsd(prod.product_id, e.target.value)} placeholder={(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
                                     </td>
                                     <td className="px-3 py-1.5 border-x border-slate-200">
                                         <input type="number" min="0" value={rowConfirmedQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'confirmedQty', e.target.value)} placeholder="0" className="w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-emerald-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed" />
@@ -431,14 +563,15 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                                 </tr>
                             );
                         })}
-                        {paginatedData.length === 0 && <tr><td colSpan={12} className="px-4 py-12 text-center text-slate-500 italic">No products found matching your filter.</td></tr>}
+                        {paginatedData.length === 0 && <tr><td colSpan={13} className="px-4 py-12 text-center text-slate-500 italic">No products found matching your filter.</td></tr>}
                     </tbody>
                     {filteredGridProducts.length > 0 && (
                         <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-slate-100 font-bold text-xs text-slate-700">
                             <tr>
                                 <td colSpan={7} className="px-4 py-3 text-right uppercase tracking-wider">Total (All Pages)</td>
                                 <td className="px-3 py-3 text-center text-blue-700 border-l border-slate-200">{gridTotals.totalFcastQty}</td>
-                                <td className="px-3 py-3 text-right text-slate-800 border-x border-slate-200">{gridTotals.totalPlanPrice > 0 ? gridTotals.totalPlanPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-3 py-3 text-right text-slate-800 border-l border-slate-200">{gridTotals.totalPlanPrice > 0 ? gridTotals.totalPlanPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-3 py-3 text-right text-slate-800 border-x border-slate-200">{gridTotals.totalPlanPrice > 0 ? (gridTotals.totalPlanPrice / USD_TO_AED_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 <td className="px-3 py-3 text-center text-emerald-700 border-r border-slate-200">{gridTotals.totalConfQty}</td>
                                 <td className="px-4 py-3 text-right text-slate-800">{gridTotals.totalAed > 0 ? gridTotals.totalAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 <td className="px-4 py-3 text-right text-purple-700 border-l border-slate-200">{gridTotals.totalGp !== 0 ? gridTotals.totalGp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
@@ -496,6 +629,47 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           </table>
         </div>
       </div>
+
+      {/* Add Model to Forecast picker */}
+      {showAddModal && (
+          <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/40 backdrop-blur-sm p-4 pt-28" onMouseDown={() => setShowAddModal(false)}>
+              <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-lg animate-in fade-in zoom-in-95 duration-200" onMouseDown={(e) => e.stopPropagation()}>
+                  <div className="flex items-start justify-between px-5 py-4 border-b border-slate-200">
+                      <div>
+                          <h3 className="text-sm font-bold text-slate-800">Add Model to Forecast</h3>
+                          <p className="text-xs text-slate-500 mt-0.5 max-w-sm">Only models with a valid price are listed. Added rows appear at the top of the grid — enter a forecast and <span className="font-semibold">Save</span> to keep them.</p>
+                      </div>
+                      <button type="button" onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 shrink-0"><X size={18} /></button>
+                  </div>
+                  <div className="p-5 space-y-3 min-h-[120px]">
+                      {isLoadingAddable ? (
+                          <div className="flex items-center gap-2 text-sm text-slate-500 py-8 justify-center"><Loader2 size={18} className="animate-spin text-blue-500" /> Loading models…</div>
+                      ) : (
+                          <>
+                              <Select
+                                  autoFocus
+                                  options={addableOptions}
+                                  menuPortalTarget={document.body}
+                                  styles={customSelectStyles}
+                                  placeholder={`Search ${addableOptions.length} models…`}
+                                  value={null}
+                                  onChange={(opt: any) => { if (opt) addModel(opt.product); }}
+                                  noOptionsMessage={() => 'No more priced models to add for this BP'}
+                              />
+                              {addedProducts.length > 0 && (
+                                  <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2 text-xs text-indigo-800">
+                                      <span className="font-bold">{addedProducts.length}</span> model{addedProducts.length > 1 ? 's' : ''} added to the grid. Fill in the forecast and click <span className="font-bold">Save</span> — unsaved additions are cleared on refresh.
+                                  </div>
+                              )}
+                          </>
+                      )}
+                  </div>
+                  <div className="px-5 py-3 border-t border-slate-200 flex justify-end">
+                      <button type="button" onClick={() => setShowAddModal(false)} className="px-4 h-[34px] rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors">Done</button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 }
