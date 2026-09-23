@@ -19,7 +19,7 @@ const NavButton = ({ id, label, icon: Icon, activeTab, isSidebarOpen, onClick }:
   </button>
 );
 
-export default function Forecast({ dbLobs, dbProductsLob, dbProductsMonth, dbPricingLob, dbPricingMonth, dbEntriesLob, dbEntriesMonth, dbBudgets, dbActualSales }: any) {
+export default function Forecast({ dbLobs, dbProductsLob, dbProductsMonth, dbPricingLob, dbPricingMonth, dbEntriesLob, dbEntriesMonth, dbBudgets, dbActualSales, dbEntriesYtd, dbActualSalesYtd, dbAddableProducts, dbDashLobs, dbDashProducts, dbDashEntries, dbDashActualSales, dbDashEntriesYtd, dbDashActualSalesYtd }: any) {
   const user = usePage().props.auth.user as any; 
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -120,7 +120,7 @@ export default function Forecast({ dbLobs, dbProductsLob, dbProductsMonth, dbPri
         <div className="flex-1 overflow-auto p-6">
             {/* Data entry stays mounted so unsaved edits survive tab switches */}
             <div className={activeTab === 'data-entry' ? 'block h-full' : 'hidden'}>
-              <SalesDataEntry dbLobs={dbLobs} dbProducts={dbProductsLob || []} dbPricing={dbPricingLob || []} dbEntries={dbEntriesLob || []} />
+              <SalesDataEntry dbLobs={dbLobs} dbProducts={dbProductsLob || []} dbPricing={dbPricingLob || []} dbEntries={dbEntriesLob || []} dbAddableProducts={dbAddableProducts || []} />
             </div>
 
             {/* Read-only tabs mount only when active so their aggregations don't run in the background */}
@@ -141,7 +141,7 @@ export default function Forecast({ dbLobs, dbProductsLob, dbProductsMonth, dbPri
             )}
             {activeTab === 'dashboard' && (
               <div className="h-full">
-                <FullDashboard isActive dbLobs={dbLobs} dbProducts={dbProductsMonth || []} dbEntries={dbEntriesMonth || []} dbActualSales={dbActualSales || []} dbPricing={dbPricingMonth || []} user={user} />
+                <FullDashboard isActive dbLobs={dbDashLobs || []} dbProducts={dbDashProducts || []} dbEntries={dbDashEntries || []} dbActualSales={dbDashActualSales || []} dbPricing={[]} dbEntriesYtd={dbDashEntriesYtd || []} dbActualSalesYtd={dbDashActualSalesYtd || []} user={user} />
               </div>
             )}
         </div>
