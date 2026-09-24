@@ -14,12 +14,16 @@ import MonthPicker from './Shared/MonthPicker';
 const customSelectStyles = {
     menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
     control: (base: any, state: any) => ({ 
-        ...base, borderColor: '#e2e8f0', borderRadius: '0.5rem', minHeight: '36px', height: '36px', boxShadow: 'none', fontSize: '13px', backgroundColor: state.isDisabled ? '#f8fafc' : '#ffffff' 
+        ...base, borderColor: state.isFocused ? 'rgb(var(--color-accent))' : 'rgb(var(--color-base-300))', borderRadius: '0.5rem', minHeight: '36px', height: '36px', boxShadow: 'none', fontSize: '13px', backgroundColor: state.isDisabled ? 'rgb(var(--color-base-200))' : 'rgb(var(--color-base-100))' 
     }),
     valueContainer: (base: any) => ({ ...base, padding: '0 8px' }),
     input: (base: any) => ({ ...base, margin: '0', padding: '0' }),
     indicatorsContainer: (base: any) => ({ ...base, height: '36px' }),
-    option: (base: any) => ({ ...base, fontSize: '13px', padding: '6px 10px' })
+    option: (base: any, state: any) => ({
+        ...base, fontSize: '13px', padding: '6px 10px',
+        color: 'rgb(var(--color-base-content))',
+        backgroundColor: state.isSelected ? 'rgb(var(--color-primary) / 0.2)' : state.isFocused ? 'rgb(var(--color-base-200))' : 'transparent',
+    })
 };
 
 export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntries, dbAddableProducts = [] }: any) {
@@ -352,7 +356,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
             role={notification.type === 'error' ? 'alert' : 'status'}
             aria-live={notification.type === 'error' ? 'assertive' : 'polite'}
             className={`fixed top-20 right-8 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-in slide-in-from-top-4 ${
-              notification.type === 'error' ? 'bg-rose-600' : notification.type === 'info' ? 'bg-slate-800' : 'bg-emerald-500'
+              notification.type === 'error' ? 'bg-error' : notification.type === 'info' ? 'bg-neutral' : 'bg-success'
             }`}
           >
             {notification.type === 'error' ? <AlertCircle size={20} /> : notification.type === 'info' ? <Info size={20} /> : <CheckCircle2 size={20} />}
@@ -361,10 +365,10 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
         )}
 
       {/* Header Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 shrink-0">
+      <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 p-4 shrink-0">
           <div className="flex flex-wrap items-end gap-6">
               <div className="w-96 flex-shrink-0">
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Sold to BP</label>
+                  <label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Sold to BP</label>
                   <Select isClearable options={lobOptions} menuPortalTarget={document.body} styles={customSelectStyles} value={lobOptions.find((opt:any) => opt.value === selectedLob) || null} placeholder="Search BP Code or Name..." onInputChange={(val, a) => { if (a.action === 'input-change') setLobSearchInput(val); }} onChange={(opt: any) => { 
                         const newLobId = opt ? opt.value : null;
                         setSelectedLob(newLobId); 
@@ -384,23 +388,23 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                   />
               </div>
               <div className="w-48">
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Forecast Month</label>
-                  <MonthPicker value={planningMonth} onChange={setPlanningMonth} editableFrom={getNextMonthString()} className={`w-full border rounded-lg h-[36px] px-3 text-sm text-left bg-white focus:ring-2 focus:ring-blue-500 ${isReadOnly ? 'border-amber-300 text-amber-700' : 'border-slate-300 text-slate-700 hover:border-slate-400'}`} />
+                  <label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Forecast Month</label>
+                  <MonthPicker value={planningMonth} onChange={setPlanningMonth} editableFrom={getNextMonthString()} className={`w-full border rounded-lg h-[36px] px-3 text-sm text-left bg-base-100 focus:ring-2 focus:ring-accent ${isReadOnly ? 'border-warning/40 text-warning-strong' : 'border-base-content/15 text-base-content/80 hover:border-base-content/25'}`} />
               </div>
 
               {/* View-only indicator for current/past months */}
               {isReadOnly && (
-                  <div className="bg-amber-50 border border-amber-200 px-3 h-[36px] rounded-lg flex items-center gap-2" role="status">
-                      <Lock size={14} className="text-amber-600 shrink-0" />
-                      <span className="text-xs font-bold text-amber-800">View only — past forecasts can't be edited</span>
+                  <div className="bg-warning/10 border border-warning/40 px-3 h-[36px] rounded-lg flex items-center gap-2" role="status">
+                      <Lock size={14} className="text-warning-strong shrink-0" />
+                      <span className="text-xs font-bold text-warning-strong">View only — past forecasts can't be edited</span>
                   </div>
               )}
 
               {/* show the Admin who owns this LOB */}
               {user.role_id === 2 && selectedLob && (
-                  <div className="bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg flex flex-col justify-center">
-                      <span className="text-[11px] font-black text-amber-600 uppercase tracking-wider"></span>
-                      <span className="text-xs font-bold text-amber-800">
+                  <div className="bg-warning/10 border border-warning/40 px-3 py-1.5 rounded-lg flex flex-col justify-center">
+                      <span className="text-[11px] font-black text-warning-strong uppercase tracking-wider"></span>
+                      <span className="text-xs font-bold text-warning-strong">
                           {lobOptions.find((opt: any) => opt.value === selectedLob)?.repName || 'Unassigned'}
                       </span>
                   </div>
@@ -413,7 +417,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                       type="button"
                       onClick={openAddModal}
                       disabled={!selectedLob || isLoadingData}
-                      className="h-[36px] px-4 rounded-lg font-bold text-sm border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
+                      className="h-[36px] px-4 rounded-lg font-bold text-sm border border-accent/30 text-accent bg-accent/5 hover:bg-accent/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
                       title={!selectedLob ? 'Select a Business Partner first' : 'Add a model to this forecast'}
                   >
                       <Plus size={16} /> Add Model
@@ -421,11 +425,11 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
               )}
 
               {isReadOnly ? (
-                  <div className="h-[36px] px-6 rounded-lg font-bold text-sm flex items-center justify-center gap-2 bg-slate-100 text-slate-500 border border-slate-200 whitespace-nowrap cursor-not-allowed">
+                  <div className="h-[36px] px-6 rounded-lg font-bold text-sm flex items-center justify-center gap-2 bg-base-150 text-base-content/60 border border-base-300 whitespace-nowrap cursor-not-allowed">
                       <Lock size={16} /> Saving disabled
                   </div>
               ) : (
-                  <button onClick={handleSaveAll} disabled={pendingSavesCount === 0 || isSaving || isLoadingData} className="bg-blue-600 text-white h-[36px] px-6 rounded-lg font-bold text-sm hover:bg-blue-700 disabled:bg-slate-300 flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap">
+                  <button onClick={handleSaveAll} disabled={pendingSavesCount === 0 || isSaving || isLoadingData} className="bg-primary text-primary-content h-[36px] px-6 rounded-lg font-bold text-sm hover:bg-primary-hover disabled:bg-base-content/20 flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap">
                       <Save size={16} /> {isSaving ? 'Saving...' : `Save ${pendingSavesCount} Updates`}
                   </button>
               )}
@@ -433,63 +437,63 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
       </div>
 
       {/* Grid */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col" style={{ minHeight: '600px', maxHeight: '60vh' }}>
-          <div className="bg-slate-50 border-b border-slate-200 p-3 flex items-center justify-between shrink-0">
+      <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden flex-1 flex flex-col" style={{ minHeight: '600px', maxHeight: '60vh' }}>
+          <div className="bg-base-200 border-b border-base-300 p-3 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Mass Entry {filteredGridProducts.length > 0 && `(${filteredGridProducts.length} Products)`}</span>
-                  {isLoadingData && <Loader2 size={14} className="animate-spin text-blue-500 ml-2" />}
+                  <div className="w-3 h-3 rounded-full bg-primary"></div>
+                  <span className="text-xs font-bold text-base-content/70 uppercase tracking-widest">Mass Entry {filteredGridProducts.length > 0 && `(${filteredGridProducts.length} Products)`}</span>
+                  {isLoadingData && <Loader2 size={14} className="animate-spin text-primary ml-2" />}
                   {selectedLob && !isReadOnly && (
-                      <div className="hidden xl:flex items-center gap-3 ml-3 pl-3 border-l border-slate-200">
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                              <span className="w-2.5 h-2.5 rounded-sm bg-blue-100 border border-blue-300 shrink-0"></span>
+                      <div className="hidden xl:flex items-center gap-3 ml-3 pl-3 border-l border-base-300">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-base-content/60">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-primary/20 border border-primary/50 shrink-0"></span>
                               Unsaved changes
                           </span>
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-100 border border-emerald-300 shrink-0"></span>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-base-content/60">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-success/20 border border-success/40 shrink-0"></span>
                               Carried from last month
                           </span>
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                              <span className="w-2.5 h-2.5 rounded-sm bg-amber-100 border border-amber-300 shrink-0"></span>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-base-content/60">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-warning/20 border border-warning/40 shrink-0"></span>
                               Custom price (differs from list)
                           </span>
                       </div>
                   )}
               </div>
               <div className="relative">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input type="text" placeholder="Filter product based on BP..." value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} disabled={!selectedLob || isLoadingData} className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-full text-xs focus:ring-blue-500 w-64 shadow-inner disabled:bg-slate-100" />
+                  <Search className="w-4 h-4 text-base-content/60 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input type="text" placeholder="Filter product based on BP..." value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} disabled={!selectedLob || isLoadingData} className="pl-9 pr-4 py-1.5 border border-base-content/15 rounded-full text-xs focus:ring-accent w-64 shadow-inner disabled:bg-base-150" />
               </div>
           </div>
           
           <div className="overflow-auto flex-1 relative" aria-busy={isLoadingData}>
             {!selectedLob ? (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-500 italic text-sm bg-slate-50/50">Please select a Business Partner to load the grid.</div>
+                <div className="absolute inset-0 flex items-center justify-center text-base-content/60 italic text-sm bg-base-200/50">Please select a Business Partner to load the grid.</div>
             ) : isLoadingData ? (
-                <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50/50 gap-3">
-                    <Loader2 size={30} className="animate-spin text-blue-500" />
+                <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-base-content/60 bg-base-200/50 gap-3">
+                    <Loader2 size={30} className="animate-spin text-primary" />
                     <span className="text-sm font-medium">Fetching Pricing & Data...</span>
                 </div>
             ) : (
                 <table className="w-full text-left border-collapse whitespace-nowrap">
-                    <thead className="sticky top-0 z-20 shadow-sm text-[11px] uppercase tracking-wider text-slate-500 bg-white">
+                    <thead className="sticky top-0 z-20 shadow-sm text-[11px] uppercase tracking-wider text-base-content/60 bg-base-100">
                         <tr>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 w-12 text-center">No</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">LOB</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Product Model</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Item Code</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100">Description</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">Price (AED)</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-100 text-right">COGS (AED)</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center border-l border-l-slate-200 w-32 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]">Forecast Qty</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center w-32">Plan Price AED</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-blue-50 text-blue-700 text-center w-32">Plan Price USD</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-emerald-50 text-emerald-700 text-center w-32 border-x border-slate-200">Confirm Qty</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-slate-50 text-slate-800 text-right w-32">Total AED</th>
-                            <th className="border-b border-slate-200 px-4 py-3 font-bold bg-purple-50 text-purple-800 text-right w-32 border-l border-slate-200">GP (AED)</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-150 w-12 text-center">No</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-150">LOB</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-150">Product Model</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-150">Item Code</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-150">Description</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-150 text-right">Price (AED)</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-150 text-right">COGS (AED)</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-accent-tint text-accent text-center border-l border-l-base-300 w-32 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]">Forecast Qty</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-accent-tint text-accent text-center w-32">Plan Price AED</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-accent-tint text-accent text-center w-32">Plan Price USD</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-success-tint text-success text-center w-32 border-x border-base-300">Confirm Qty</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-base-200 text-base-content text-right w-32">Total AED</th>
+                            <th className="border-b border-base-300 px-4 py-3 font-bold bg-secondary-tint text-secondary text-right w-32 border-l border-base-300">GP (AED)</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-xs">
+                    <tbody className="divide-y divide-base-200 text-xs">
                         {paginatedData.map((prod: any, idx: number) => {
                             const editData = edits[prod.product_id];
                             const isEditing = editData !== undefined;
@@ -515,66 +519,66 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                             const isRowModified = isQtyChanged || isPriceChanged || isConfirmedQtyChanged;
 
                             return (
-                                <tr key={prod.product_id} className={`transition-colors ${isRowModified ? 'bg-blue-100/70 hover:bg-blue-100' : prod.is_added ? 'bg-indigo-50/60 hover:bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                                    <td className="px-4 py-2 font-mono text-slate-500 text-center">
+                                <tr key={prod.product_id} className={`transition-colors ${isRowModified ? 'bg-primary/20 hover:bg-primary/25' : prod.is_added ? 'bg-info/5 hover:bg-info/10' : 'hover:bg-base-200'}`}>
+                                    <td className="px-4 py-2 font-mono text-base-content/60 text-center">
                                         {prod.is_added && !isReadOnly ? (
-                                            <button type="button" onClick={() => removeAddedModel(prod.product_id)} title="Remove this added model" className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+                                            <button type="button" onClick={() => removeAddedModel(prod.product_id)} title="Remove this added model" className="text-base-content/30 hover:text-error transition-colors"><Trash2 size={14} /></button>
                                         ) : actualIdx}
                                     </td>
-                                    <td className="px-4 py-2 font-medium text-slate-700 truncate max-w-[120px]">{currentLobName}</td>
-                                    <td className="px-4 py-2 font-bold text-slate-800">
-                                        {prod.is_added && <span className="inline-flex items-center mr-2 px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-wide align-middle">New</span>}
+                                    <td className="px-4 py-2 font-medium text-base-content/80 truncate max-w-[120px]">{currentLobName}</td>
+                                    <td className="px-4 py-2 font-bold text-base-content">
+                                        {prod.is_added && <span className="inline-flex items-center mr-2 px-1.5 py-0.5 rounded bg-info/20 text-info text-[9px] font-black uppercase tracking-wide align-middle">New</span>}
                                         {prod.product_model}
                                     </td>
-                                    <td className="px-4 py-2 font-mono text-slate-500">{prod.item_code}</td>
-                                    <td className="px-4 py-2 text-slate-600 truncate max-w-[200px]" title={prod.item_description}>{prod.item_description}</td>
-                                    <td className="px-4 py-2 text-right font-medium text-slate-600">
+                                    <td className="px-4 py-2 font-mono text-base-content/60">{prod.item_code}</td>
+                                    <td className="px-4 py-2 text-base-content/70 truncate max-w-[200px]" title={prod.item_description}>{prod.item_description}</td>
+                                    <td className="px-4 py-2 text-right font-medium text-base-content/70">
                                         {prod.master_price_aed > 0 ? (
                                             <div className="flex flex-col">
                                                 <span>{prod.master_price_aed.toFixed(2)}</span>
-                                                <span className="text-[11px] text-slate-500">≈ ${(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
+                                                <span className="text-[11px] text-base-content/60">≈ ${(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
                                             </div>
                                         ) : '-'}
                                     </td>
                                     
-                                    <td className="px-4 py-2 text-right font-medium text-slate-600">
+                                    <td className="px-4 py-2 text-right font-medium text-base-content/70">
                                         {prod.cogs_price_aed > 0 ? (
                                             <div className="flex flex-col">
                                                 <span>{prod.cogs_price_aed.toFixed(2)}</span>
-                                                <span className="text-[11px] text-slate-500">≈ ${(prod.cogs_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
+                                                <span className="text-[11px] text-base-content/60">≈ ${(prod.cogs_price_aed / USD_TO_AED_RATE).toFixed(2)}</span>
                                             </div>
                                         ) : '-'}
                                     </td>
                                     
-                                    <td className="px-3 py-1.5 border-l border-l-slate-100 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.02)]">
-                                        <input type="number" min="0" value={rowQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'qty', e.target.value)} placeholder="0" className={`w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-blue-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : ''}`} />
+                                    <td className="px-3 py-1.5 border-l border-l-base-200 shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.02)]">
+                                        <input type="number" min="0" value={rowQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'qty', e.target.value)} placeholder="0" className={`w-full border-base-content/15 rounded text-center text-xs h-7 focus:ring-accent font-bold transition-colors disabled:bg-base-150 disabled:text-base-content/60 disabled:cursor-not-allowed ${isPrefilled ? 'bg-success/10 text-success border-success/40' : ''}`} />
                                     </td>
                                     <td className="px-3 py-1.5">
-                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} disabled={isReadOnly} onChange={(e) => handlePlanPriceAed(prod.product_id, e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
+                                        <input type="number" step="0.01" min="0" value={rowPlanPrice} disabled={isReadOnly} onChange={(e) => handlePlanPriceAed(prod.product_id, e.target.value)} placeholder={prod.master_price_aed.toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-accent font-medium transition-colors disabled:bg-base-150 disabled:text-base-content/60 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-success/10 border-success/40 text-success' : rowPlanPrice !== '' && !isPrefilled ? 'bg-warning/10 border-warning/40 text-warning-strong' : 'border-base-content/15'}`} />
                                     </td>
                                     <td className="px-3 py-1.5">
-                                        <input type="number" step="0.01" min="0" value={rowPlanPriceUsd} disabled={isReadOnly} onChange={(e) => handlePlanPriceUsd(prod.product_id, e.target.value)} placeholder={(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-blue-500 font-medium transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : rowPlanPrice !== '' && !isPrefilled ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300'}`} />
+                                        <input type="number" step="0.01" min="0" value={rowPlanPriceUsd} disabled={isReadOnly} onChange={(e) => handlePlanPriceUsd(prod.product_id, e.target.value)} placeholder={(prod.master_price_aed / USD_TO_AED_RATE).toFixed(2)} className={`w-full rounded text-right text-xs h-7 focus:ring-accent font-medium transition-colors disabled:bg-base-150 disabled:text-base-content/60 disabled:cursor-not-allowed ${isPrefilled && rowPlanPrice !== '' ? 'bg-success/10 border-success/40 text-success' : rowPlanPrice !== '' && !isPrefilled ? 'bg-warning/10 border-warning/40 text-warning-strong' : 'border-base-content/15'}`} />
                                     </td>
-                                    <td className="px-3 py-1.5 border-x border-slate-200">
-                                        <input type="number" min="0" value={rowConfirmedQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'confirmedQty', e.target.value)} placeholder="0" className="w-full border-slate-300 rounded text-center text-xs h-7 focus:ring-emerald-500 font-bold transition-colors disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed" />
+                                    <td className="px-3 py-1.5 border-x border-base-300">
+                                        <input type="number" min="0" value={rowConfirmedQty} disabled={isReadOnly} onChange={(e) => handleEdit(prod.product_id, 'confirmedQty', e.target.value)} placeholder="0" className="w-full border-base-content/15 rounded text-center text-xs h-7 focus:ring-success font-bold transition-colors disabled:bg-base-150 disabled:text-base-content/60 disabled:cursor-not-allowed" />
                                     </td>
-                                    <td className="px-4 py-2 text-right font-black text-slate-700">{totalVal > 0 ? totalVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                    <td className={`px-4 py-2 text-right font-black border-l border-slate-100 ${gpVal > 0 ? 'text-purple-700' : gpVal < 0 ? 'text-red-600' : 'text-slate-500'}`}>{gpVal !== 0 ? gpVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                    <td className="px-4 py-2 text-right font-black text-base-content/80">{totalVal > 0 ? totalVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                    <td className={`px-4 py-2 text-right font-black border-l border-base-200 ${gpVal > 0 ? 'text-secondary' : gpVal < 0 ? 'text-error' : 'text-base-content/60'}`}>{gpVal !== 0 ? gpVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 </tr>
                             );
                         })}
-                        {paginatedData.length === 0 && <tr><td colSpan={13} className="px-4 py-12 text-center text-slate-500 italic">No products found matching your filter.</td></tr>}
+                        {paginatedData.length === 0 && <tr><td colSpan={13} className="px-4 py-12 text-center text-base-content/60 italic">No products found matching your filter.</td></tr>}
                     </tbody>
                     {filteredGridProducts.length > 0 && (
-                        <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-slate-100 font-bold text-xs text-slate-700">
+                        <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-base-150 font-bold text-xs text-base-content/80">
                             <tr>
                                 <td colSpan={7} className="px-4 py-3 text-right uppercase tracking-wider">Total (All Pages)</td>
-                                <td className="px-3 py-3 text-center text-blue-700 border-l border-slate-200">{gridTotals.totalFcastQty}</td>
-                                <td className="px-3 py-3 text-right text-slate-800 border-l border-slate-200">{gridTotals.totalPlanPrice > 0 ? gridTotals.totalPlanPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                <td className="px-3 py-3 text-right text-slate-800 border-x border-slate-200">{gridTotals.totalPlanPrice > 0 ? (gridTotals.totalPlanPrice / USD_TO_AED_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                <td className="px-3 py-3 text-center text-emerald-700 border-r border-slate-200">{gridTotals.totalConfQty}</td>
-                                <td className="px-4 py-3 text-right text-slate-800">{gridTotals.totalAed > 0 ? gridTotals.totalAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                <td className="px-4 py-3 text-right text-purple-700 border-l border-slate-200">{gridTotals.totalGp !== 0 ? gridTotals.totalGp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-3 py-3 text-center text-accent border-l border-base-300">{gridTotals.totalFcastQty}</td>
+                                <td className="px-3 py-3 text-right text-base-content border-l border-base-300">{gridTotals.totalPlanPrice > 0 ? gridTotals.totalPlanPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-3 py-3 text-right text-base-content border-x border-base-300">{gridTotals.totalPlanPrice > 0 ? (gridTotals.totalPlanPrice / USD_TO_AED_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-3 py-3 text-center text-success border-r border-base-300">{gridTotals.totalConfQty}</td>
+                                <td className="px-4 py-3 text-right text-base-content">{gridTotals.totalAed > 0 ? gridTotals.totalAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className="px-4 py-3 text-right text-secondary border-l border-base-300">{gridTotals.totalGp !== 0 ? gridTotals.totalGp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                             </tr>
                         </tfoot>
                     )}
@@ -588,43 +592,43 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
       </div>
 
       {/* Recent Entry Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col shrink-0" style={{ minHeight: '400px', maxHeight: '60vh' }}>
-        <div className="p-5 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center shrink-0">
+      <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden flex flex-col shrink-0" style={{ minHeight: '400px', maxHeight: '60vh' }}>
+        <div className="p-5 border-b border-base-300 bg-base-200/50 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Your Recent Entries</h3>
-              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase">View Month:</span>
-                  <MonthPicker value={recentMonthFilter} onChange={setRecentMonthFilter} className="text-xs font-black text-blue-600 h-6 px-1 cursor-pointer" />
+              <h3 className="text-sm font-bold text-base-content uppercase tracking-wider">Your Recent Entries</h3>
+              <div className="flex items-center gap-2 bg-base-100 border border-base-300 rounded-lg px-2 py-1 shadow-sm">
+                  <span className="text-[11px] font-bold text-base-content/60 uppercase">View Month:</span>
+                  <MonthPicker value={recentMonthFilter} onChange={setRecentMonthFilter} className="text-xs font-black text-accent h-6 px-1 cursor-pointer" />
               </div>
           </div>
-          <button onClick={exportEntriesToCSV} disabled={filteredEntries.length === 0} className="flex items-center gap-2 text-xs font-bold bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><Download size={14} /> Export CSV</button>
+          <button onClick={exportEntriesToCSV} disabled={filteredEntries.length === 0} className="flex items-center gap-2 text-xs font-bold bg-base-100 border border-base-content/15 text-base-content/80 px-3 py-1.5 rounded hover:bg-base-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><Download size={14} /> Export CSV</button>
         </div>
         <div className="overflow-auto flex-1 relative">
           <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase sticky top-0 shadow-sm z-20">
+            <thead className="bg-base-200 text-base-content/60 font-bold border-b border-base-300 text-[11px] uppercase sticky top-0 shadow-sm z-20">
               <tr>
-                <th className="px-6 py-4 bg-white">Month</th>
-                <th className="px-6 py-4 bg-white">BP Code</th>
-                <th className="px-6 py-4 bg-white">Product Line</th>
-                <th className="px-6 py-4 bg-white">Product Model</th>
-                <th className="px-6 py-4 text-center bg-white">Plan Qty</th>
-                <th className="px-6 py-4 text-center bg-white text-emerald-700">Confirm Qty</th>
-                <th className="px-6 py-4 text-right bg-white">Net Sales (AED)</th>
+                <th className="px-6 py-4 bg-base-100">Month</th>
+                <th className="px-6 py-4 bg-base-100">BP Code</th>
+                <th className="px-6 py-4 bg-base-100">Product Line</th>
+                <th className="px-6 py-4 bg-base-100">Product Model</th>
+                <th className="px-6 py-4 text-center bg-base-100">Plan Qty</th>
+                <th className="px-6 py-4 text-center bg-base-100 text-success">Confirm Qty</th>
+                <th className="px-6 py-4 text-right bg-base-100">Net Sales (AED)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-base-200 text-xs">
                 {filteredEntries.map((entry: any) => (
-                <tr key={entry.user_planning_id} className="hover:bg-slate-50 transition-colors">
+                <tr key={entry.user_planning_id} className="hover:bg-base-200 transition-colors">
                   <td className="px-6 py-4 font-mono text-xs">{entry.planning_month}</td>
                   <td className="px-6 py-4 font-medium">{dbLobs.find((l:any) => l.lob_id === entry.lob_id)?.sold_to_bp}</td>
-                  <td className="px-6 py-4 text-slate-600">{dbProducts.find((p:any) => p.product_id === entry.product_id)?.product_line || '-'}</td>
-                  <td className="px-6 py-4 text-slate-600">{dbProducts.find((p:any) => p.product_id === entry.product_id)?.product_model}</td>
+                  <td className="px-6 py-4 text-base-content/70">{dbProducts.find((p:any) => p.product_id === entry.product_id)?.product_line || '-'}</td>
+                  <td className="px-6 py-4 text-base-content/70">{dbProducts.find((p:any) => p.product_id === entry.product_id)?.product_model}</td>
                   <td className="px-6 py-4 text-center font-bold">{entry.planned_quantity}</td>
-                  <td className="px-6 py-4 text-center font-bold text-emerald-600">{entry.confirmed_quantity != null ? entry.confirmed_quantity : 0}</td>
-                  <td className="px-6 py-4 text-right font-black text-blue-600">{Number(entry.total_amount).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-center font-bold text-success">{entry.confirmed_quantity != null ? entry.confirmed_quantity : 0}</td>
+                  <td className="px-6 py-4 text-right font-black text-accent">{Number(entry.total_amount).toFixed(2)}</td>
                 </tr>
               ))}
-              {filteredEntries.length === 0 && <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500 italic font-medium">No entries found for {recentMonthFilter}.</td></tr>}
+              {filteredEntries.length === 0 && <tr><td colSpan={7} className="px-6 py-10 text-center text-base-content/60 italic font-medium">No entries found for {recentMonthFilter}.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -632,18 +636,18 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
 
       {/* Add Model to Forecast picker */}
       {showAddModal && (
-          <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/40 backdrop-blur-sm p-4 pt-28" onMouseDown={() => setShowAddModal(false)}>
-              <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-lg animate-in fade-in zoom-in-95 duration-200" onMouseDown={(e) => e.stopPropagation()}>
-                  <div className="flex items-start justify-between px-5 py-4 border-b border-slate-200">
+          <div className="fixed inset-0 z-[60] flex items-start justify-center bg-neutral/40 backdrop-blur-sm p-4 pt-28" onMouseDown={() => setShowAddModal(false)}>
+              <div className="bg-base-100 rounded-xl shadow-2xl border border-base-300 w-full max-w-lg animate-in fade-in zoom-in-95 duration-200" onMouseDown={(e) => e.stopPropagation()}>
+                  <div className="flex items-start justify-between px-5 py-4 border-b border-base-300">
                       <div>
-                          <h3 className="text-sm font-bold text-slate-800">Add Model to Forecast</h3>
-                          <p className="text-xs text-slate-500 mt-0.5 max-w-sm">Only models with a valid price are listed. Added rows appear at the top of the grid — enter a forecast and <span className="font-semibold">Save</span> to keep them.</p>
+                          <h3 className="text-sm font-bold text-base-content">Add Model to Forecast</h3>
+                          <p className="text-xs text-base-content/60 mt-0.5 max-w-sm">Only models with a valid price are listed. Added rows appear at the top of the grid — enter a forecast and <span className="font-semibold">Save</span> to keep them.</p>
                       </div>
-                      <button type="button" onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 shrink-0"><X size={18} /></button>
+                      <button type="button" onClick={() => setShowAddModal(false)} className="text-base-content/45 hover:text-base-content/70 shrink-0"><X size={18} /></button>
                   </div>
                   <div className="p-5 space-y-3 min-h-[120px]">
                       {isLoadingAddable ? (
-                          <div className="flex items-center gap-2 text-sm text-slate-500 py-8 justify-center"><Loader2 size={18} className="animate-spin text-blue-500" /> Loading models…</div>
+                          <div className="flex items-center gap-2 text-sm text-base-content/60 py-8 justify-center"><Loader2 size={18} className="animate-spin text-primary" /> Loading models…</div>
                       ) : (
                           <>
                               <Select
@@ -657,15 +661,15 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                                   noOptionsMessage={() => 'No more priced models to add for this BP'}
                               />
                               {addedProducts.length > 0 && (
-                                  <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2 text-xs text-indigo-800">
+                                  <div className="rounded-lg bg-info/10 border border-info/20 px-3 py-2 text-xs text-info">
                                       <span className="font-bold">{addedProducts.length}</span> model{addedProducts.length > 1 ? 's' : ''} added to the grid. Fill in the forecast and click <span className="font-bold">Save</span> — unsaved additions are cleared on refresh.
                                   </div>
                               )}
                           </>
                       )}
                   </div>
-                  <div className="px-5 py-3 border-t border-slate-200 flex justify-end">
-                      <button type="button" onClick={() => setShowAddModal(false)} className="px-4 h-[34px] rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors">Done</button>
+                  <div className="px-5 py-3 border-t border-base-300 flex justify-end">
+                      <button type="button" onClick={() => setShowAddModal(false)} className="px-4 h-[34px] rounded-lg bg-primary text-primary-content text-sm font-bold hover:bg-primary-hover transition-colors">Done</button>
                   </div>
               </div>
           </div>

@@ -219,103 +219,103 @@ export default function SummaryByBP({ isActive, dbLobs, dbProducts, dbPricing, d
   if (visibleCols.itemCode) subtotalColSpan++; if (visibleCols.description) subtotalColSpan++; if (visibleCols.brand) subtotalColSpan++;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full max-h-[800px] animate-in fade-in duration-300">
-        <div className="p-5 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center shrink-0">
+    <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden flex flex-col h-full max-h-[800px] animate-in fade-in duration-300">
+        <div className="p-5 border-b border-base-300 bg-base-200/50 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
-            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Summary By Business Partner</h3>
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase">Forecast View:</span>
-                <MonthPicker value={monthFilter} onChange={setMonthFilter} className="text-xs font-black text-blue-600 h-6 px-1 cursor-pointer" />
+            <h3 className="text-sm font-bold text-base-content uppercase tracking-wider">Summary By Business Partner</h3>
+            <div className="flex items-center gap-2 bg-base-100 border border-base-300 rounded-lg px-2 py-1 shadow-sm">
+                <span className="text-xs font-bold text-base-content/60 uppercase">Forecast View:</span>
+                <MonthPicker value={monthFilter} onChange={setMonthFilter} className="text-xs font-black text-accent h-6 px-1 cursor-pointer" />
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-              <div className="text-xs text-slate-500 font-bold bg-slate-200 px-3 py-1.5 rounded-full">{bpSummaryData.filter(d => !d.isSubtotal).length} Rows</div>
+              <div className="text-xs text-base-content/60 font-bold bg-base-300 px-3 py-1.5 rounded-full">{bpSummaryData.filter(d => !d.isSubtotal).length} Rows</div>
               
               <ColumnSettings>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.salesRep} onChange={() => toggleColumn('salesRep')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Sales Rep</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.bpName} onChange={() => toggleColumn('bpName')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />BP Name</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.lobName} onChange={() => toggleColumn('lobName')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />LOB</label>
-                  <div className="border-t border-slate-100 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.category} onChange={() => toggleColumn('category')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Product Category</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.line} onChange={() => toggleColumn('line')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Product Line</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.group} onChange={() => toggleColumn('group')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Product Group</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.itemCode} onChange={() => toggleColumn('itemCode')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Item Code</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.description} onChange={() => toggleColumn('description')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Item Description</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.brand} onChange={() => toggleColumn('brand')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Brand</label>
-                  <div className="border-t border-slate-100 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-emerald-600"><input type="checkbox" checked={visibleCols.ln_price} onChange={() => toggleColumn('ln_price')} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />LN Price (AED)</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-rose-600"><input type="checkbox" checked={visibleCols.cogs_price} onChange={() => toggleColumn('cogs_price')} className="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />COGS Price</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-rose-600"><input type="checkbox" checked={visibleCols.cogs_currency} onChange={() => toggleColumn('cogs_currency')} className="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />COGS Currency</label>
-                  <div className="border-t border-slate-100 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.kmi_qty} onChange={() => toggleColumn('kmi_qty')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />KMI On Hand</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.kme_qty} onChange={() => toggleColumn('kme_qty')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />KME On Hand</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.total_qty} onChange={() => toggleColumn('total_qty')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Total On Hand</label>
-                  <div className="border-t border-slate-100 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.avg12m} onChange={() => toggleColumn('avg12m')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />12M Avg (Sales)</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.avg6m} onChange={() => toggleColumn('avg6m')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />6M Avg (Sales)</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.avg3m} onChange={() => toggleColumn('avg3m')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />3M Avg (Sales)</label>
-                  <div className="border-t border-slate-100 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-emerald-600"><input type="checkbox" checked={visibleCols.confirmed_qty} onChange={() => toggleColumn('confirmed_qty')} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />Confirmed Qty</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.salesRep} onChange={() => toggleColumn('salesRep')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Sales Rep</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.bpName} onChange={() => toggleColumn('bpName')} className="rounded border-base-content/15 text-accent focus:ring-accent" />BP Name</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.lobName} onChange={() => toggleColumn('lobName')} className="rounded border-base-content/15 text-accent focus:ring-accent" />LOB</label>
+                  <div className="border-t border-base-200 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.category} onChange={() => toggleColumn('category')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Product Category</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.line} onChange={() => toggleColumn('line')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Product Line</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.group} onChange={() => toggleColumn('group')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Product Group</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.itemCode} onChange={() => toggleColumn('itemCode')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Item Code</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.description} onChange={() => toggleColumn('description')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Item Description</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.brand} onChange={() => toggleColumn('brand')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Brand</label>
+                  <div className="border-t border-base-200 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-success"><input type="checkbox" checked={visibleCols.ln_price} onChange={() => toggleColumn('ln_price')} className="rounded border-base-content/15 text-success focus:ring-success" />LN Price (AED)</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-error"><input type="checkbox" checked={visibleCols.cogs_price} onChange={() => toggleColumn('cogs_price')} className="rounded border-base-content/15 text-error focus:ring-error" />COGS Price</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-error"><input type="checkbox" checked={visibleCols.cogs_currency} onChange={() => toggleColumn('cogs_currency')} className="rounded border-base-content/15 text-error focus:ring-error" />COGS Currency</label>
+                  <div className="border-t border-base-200 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.kmi_qty} onChange={() => toggleColumn('kmi_qty')} className="rounded border-base-content/15 text-accent focus:ring-accent" />KMI On Hand</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.kme_qty} onChange={() => toggleColumn('kme_qty')} className="rounded border-base-content/15 text-accent focus:ring-accent" />KME On Hand</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.total_qty} onChange={() => toggleColumn('total_qty')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Total On Hand</label>
+                  <div className="border-t border-base-200 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.avg12m} onChange={() => toggleColumn('avg12m')} className="rounded border-base-content/15 text-accent focus:ring-accent" />12M Avg (Sales)</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.avg6m} onChange={() => toggleColumn('avg6m')} className="rounded border-base-content/15 text-accent focus:ring-accent" />6M Avg (Sales)</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.avg3m} onChange={() => toggleColumn('avg3m')} className="rounded border-base-content/15 text-accent focus:ring-accent" />3M Avg (Sales)</label>
+                  <div className="border-t border-base-200 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-success"><input type="checkbox" checked={visibleCols.confirmed_qty} onChange={() => toggleColumn('confirmed_qty')} className="rounded border-base-content/15 text-success focus:ring-success" />Confirmed Qty</label>
               </ColumnSettings>
 
-              <button onClick={exportToCSV} disabled={bpSummaryData.length === 0} className="flex items-center gap-2 text-xs font-bold bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+              <button onClick={exportToCSV} disabled={bpSummaryData.length === 0} className="flex items-center gap-2 text-xs font-bold bg-base-100 border border-base-content/15 text-base-content/80 px-3 py-1.5 rounded-lg hover:bg-base-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
                   <Download size={14} /> Export CSV
               </button>
           </div>
         </div>
     <div className="overflow-auto flex-1 relative" aria-busy={isLoadingData}>
         {isLoadingData ? (
-            <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50/50 gap-3 z-50">
-                <Loader2 size={30} className="animate-spin text-blue-500" />
+            <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-base-content/60 bg-base-200/50 gap-3 z-50">
+                <Loader2 size={30} className="animate-spin text-primary" />
                 <span className="text-sm font-medium">Aggregating Data for {monthFilter}...</span>
             </div>
         ) : (
             <table className="w-full text-[12px] text-left border-collapse whitespace-nowrap">
                 <thead className="sticky top-0 z-20 shadow-sm">
                     <tr>
-                        <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold text-center">No</th>
+                        <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold text-center">No</th>
                         
                         {visibleCols.salesRep && (
-                            <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold hover:bg-[#cde4bf] transition-colors cursor-pointer group" onClick={() => handleSort('salesRep')}>
-                                <div className="flex items-center justify-between gap-2">Sales Rep {sortConfig.key === 'salesRep' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
+                            <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold hover:brightness-95 transition-colors cursor-pointer group" onClick={() => handleSort('salesRep')}>
+                                <div className="flex items-center justify-between gap-2">Sales Rep {sortConfig.key === 'salesRep' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-accent"/> : <ArrowDown size={14} className="text-accent"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
                             </th>
                         )}
                         {visibleCols.bpName && (
-                            <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold hover:bg-[#cde4bf] transition-colors cursor-pointer group" onClick={() => handleSort('bpName')}>
-                                <div className="flex items-center justify-between gap-2">BP Name {sortConfig.key === 'bpName' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
+                            <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold hover:brightness-95 transition-colors cursor-pointer group" onClick={() => handleSort('bpName')}>
+                                <div className="flex items-center justify-between gap-2">BP Name {sortConfig.key === 'bpName' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-accent"/> : <ArrowDown size={14} className="text-accent"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
                             </th>
                         )}
                         {visibleCols.lobName && (
-                            <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold hover:bg-[#cde4bf] transition-colors cursor-pointer group" onClick={() => handleSort('lobName')}>
-                                <div className="flex items-center justify-between gap-2">LOB {sortConfig.key === 'lobName' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
+                            <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold hover:brightness-95 transition-colors cursor-pointer group" onClick={() => handleSort('lobName')}>
+                                <div className="flex items-center justify-between gap-2">LOB {sortConfig.key === 'lobName' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-accent"/> : <ArrowDown size={14} className="text-accent"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
                             </th>
                         )}
-                        {visibleCols.category && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold">Product Category</th>}
-                        {visibleCols.line && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold">Product Line</th>}
-                        {visibleCols.group && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold">Product Group</th>}
-                        <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold">Product Model</th>
-                        {visibleCols.itemCode && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold">Item Code</th>}
-                        {visibleCols.description && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold">Item Description</th>}
-                        {visibleCols.brand && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold">Brand</th>}
-                        {visibleCols.ln_price && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold text-right">LN Price (AED)</th>}
-                        {visibleCols.cogs_price && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold text-right">COGS Price</th>}
-                        {visibleCols.cogs_currency && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold text-center">COGS Currency</th>}
-                        {visibleCols.kmi_qty && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold text-center">KMI On Hand</th>}
-                        {visibleCols.kme_qty && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold text-center">KME On Hand</th>}
-                        {visibleCols.total_qty && <th className="border border-slate-300 bg-[#e2f0d9] px-3 py-2 text-slate-800 font-bold text-center">Total On Hand</th>}
-                        {visibleCols.avg12m && <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center">12M Avg (Sales)</th>}
-                        {visibleCols.avg6m && <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center">6M Avg (Sales)</th>}
-                        {visibleCols.avg3m && <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center">3M Avg (Sales)</th>}
+                        {visibleCols.category && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold">Product Category</th>}
+                        {visibleCols.line && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold">Product Line</th>}
+                        {visibleCols.group && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold">Product Group</th>}
+                        <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold">Product Model</th>
+                        {visibleCols.itemCode && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold">Item Code</th>}
+                        {visibleCols.description && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold">Item Description</th>}
+                        {visibleCols.brand && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold">Brand</th>}
+                        {visibleCols.ln_price && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold text-right">LN Price (AED)</th>}
+                        {visibleCols.cogs_price && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold text-right">COGS Price</th>}
+                        {visibleCols.cogs_currency && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold text-center">COGS Currency</th>}
+                        {visibleCols.kmi_qty && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold text-center">KMI On Hand</th>}
+                        {visibleCols.kme_qty && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold text-center">KME On Hand</th>}
+                        {visibleCols.total_qty && <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-base-content font-bold text-center">Total On Hand</th>}
+                        {visibleCols.avg12m && <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center">12M Avg (Sales)</th>}
+                        {visibleCols.avg6m && <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center">6M Avg (Sales)</th>}
+                        {visibleCols.avg3m && <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center">3M Avg (Sales)</th>}
                         
-                        <th className="border border-slate-300 bg-emerald-600 px-3 py-2 text-white font-bold text-center shadow-lg border-l-slate-400"><div>Total Forecast Qty</div></th>
+                        <th className="border border-base-content/15 bg-success px-3 py-2 text-white font-bold text-center shadow-lg border-l-base-content/25"><div>Total Forecast Qty</div></th>
                         {visibleCols.confirmed_qty && (
-                            <th className="border border-slate-300 bg-emerald-600 px-3 py-2 text-white font-bold text-center shadow-lg"><div> Total Confirm Qty</div></th>
+                            <th className="border border-base-content/15 bg-success px-3 py-2 text-white font-bold text-center shadow-lg"><div> Total Confirm Qty</div></th>
                         )}
-                        <th className="border border-slate-300 bg-emerald-600 px-3 py-2 text-white font-bold text-center shadow-lg"><div>Total Net Sales (AED)</div></th>
+                        <th className="border border-base-content/15 bg-success px-3 py-2 text-white font-bold text-center shadow-lg"><div>Total Net Sales (AED)</div></th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-base-200">
                     {paginatedData.map((item: any, idx: number) => {
                         const isFirstRep = idx === 0 || item.sales_rep_name !== paginatedData[idx - 1].sales_rep_name;
                         const isFirstBp = isFirstRep || item.bp_name !== paginatedData[idx - 1].bp_name;
@@ -339,25 +339,25 @@ export default function SummaryByBP({ isActive, dbLobs, dbProducts, dbPricing, d
 
                         if (item.isSubtotal) {
                             return (
-                                <tr key={item.unique_key} className="bg-slate-100/80 transition-colors border-y border-slate-300">
-                                    <td className="border border-slate-200 px-3 py-2"></td>
+                                <tr key={item.unique_key} className="bg-base-300/50 transition-colors border-y border-base-content/15">
+                                    <td className="border border-base-300 px-3 py-2"></td>
                                     {/* Subtotal row sits beneath the grouping */}
-                                    <td colSpan={subtotalColSpan} className="border border-slate-200 px-3 py-2 text-right text-slate-700 font-bold uppercase tracking-wider">Total {item.product_category}</td>
-                                    {visibleCols.ln_price && <td className="border border-slate-200 px-3 py-2 text-right text-emerald-700">{item.ln_price > 0 ? item.ln_price.toFixed(2) : '-'}</td>}
-                                    {visibleCols.cogs_price && (<td className="border border-slate-200 px-3 py-2 text-right text-rose-700"><div className="flex flex-col items-end"><span>{item.cogs_usd_value.toFixed(2)}</span><span className="text-slate-500">(AED {item.cogs_aed_value.toFixed(2)})</span></div></td>)}
-                                    {visibleCols.cogs_currency && <td className="border border-slate-200 px-3 py-2 text-center text-slate-500">USD</td>}
-                                    {visibleCols.kmi_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-800">{item.kmi_qty}</td>}
-                                    {visibleCols.kme_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-800">{item.kme_qty}</td>}
-                                    {visibleCols.total_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-900 bg-slate-200/50">{item.total_qty}</td>}
-                                    {visibleCols.avg12m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800">{item.avg_12m_sales.toFixed(1)}</td>}
-                                    {visibleCols.avg6m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800">{item.avg_6m_sales.toFixed(1)}</td>}
-                                    {visibleCols.avg3m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800">{item.avg_3m_sales.toFixed(1)}</td>}
+                                    <td colSpan={subtotalColSpan} className="border border-base-300 px-3 py-2 text-right text-base-content/80 font-bold uppercase tracking-wider">Total {item.product_category}</td>
+                                    {visibleCols.ln_price && <td className="border border-base-300 px-3 py-2 text-right text-success">{item.ln_price > 0 ? item.ln_price.toFixed(2) : '-'}</td>}
+                                    {visibleCols.cogs_price && (<td className="border border-base-300 px-3 py-2 text-right text-error"><div className="flex flex-col items-end"><span>{item.cogs_usd_value.toFixed(2)}</span><span className="text-base-content/60">(AED {item.cogs_aed_value.toFixed(2)})</span></div></td>)}
+                                    {visibleCols.cogs_currency && <td className="border border-base-300 px-3 py-2 text-center text-base-content/60">USD</td>}
+                                    {visibleCols.kmi_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content">{item.kmi_qty}</td>}
+                                    {visibleCols.kme_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content">{item.kme_qty}</td>}
+                                    {visibleCols.total_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content bg-base-300/50">{item.total_qty}</td>}
+                                    {visibleCols.avg12m && <td className="border border-base-300 px-3 py-2 text-center text-accent">{item.avg_12m_sales.toFixed(1)}</td>}
+                                    {visibleCols.avg6m && <td className="border border-base-300 px-3 py-2 text-center text-accent">{item.avg_6m_sales.toFixed(1)}</td>}
+                                    {visibleCols.avg3m && <td className="border border-base-300 px-3 py-2 text-center text-accent">{item.avg_3m_sales.toFixed(1)}</td>}
                                     
-                                    <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-400 ${item.forecast_qty > 0 ? 'bg-emerald-50 text-slate-900' : 'text-slate-300'}`}>{item.forecast_qty > 0 ? item.forecast_qty : '-'}</td>
+                                    <td className={`border border-base-content/15 px-3 py-2 text-center border-l-base-content/25 ${item.forecast_qty > 0 ? 'bg-success/10 text-base-content' : 'text-base-content/30'}`}>{item.forecast_qty > 0 ? item.forecast_qty : '-'}</td>
                                     {visibleCols.confirmed_qty && (
-                                        <td className={`border border-slate-300 px-3 py-2 text-center ${item.confirmed_qty > 0 ? 'bg-emerald-50 text-slate-900' : 'text-slate-300'}`}>{item.confirmed_qty > 0 ? item.confirmed_qty : '-'}</td>
+                                        <td className={`border border-base-content/15 px-3 py-2 text-center ${item.confirmed_qty > 0 ? 'bg-success/10 text-base-content' : 'text-base-content/30'}`}>{item.confirmed_qty > 0 ? item.confirmed_qty : '-'}</td>
                                     )}
-                                    <td className={`border border-slate-300 px-3 py-2 text-right ${item.forecast_qty > 0 ? 'bg-emerald-50 text-slate-900' : 'text-slate-300'}`}>{item.forecast_qty > 0 ? item.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                    <td className={`border border-base-content/15 px-3 py-2 text-right ${item.forecast_qty > 0 ? 'bg-success/10 text-base-content' : 'text-base-content/30'}`}>{item.forecast_qty > 0 ? item.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 </tr>
                             );
                         }
@@ -366,63 +366,63 @@ export default function SummaryByBP({ isActive, dbLobs, dbProducts, dbPricing, d
                         const cogsPriceAed = isCogsUsd && item.cogs_price ? (Number(item.cogs_price) * USD_TO_AED_RATE).toFixed(2) : null;
 
                         return (
-                            <tr key={item.unique_key} className="hover:bg-slate-50 transition-colors">
-                                <td className="border border-slate-200 px-3 py-2 text-center text-slate-500">{item.display_index}</td>
+                            <tr key={item.unique_key} className="hover:bg-base-200 transition-colors">
+                                <td className="border border-base-300 px-3 py-2 text-center text-base-content/60">{item.display_index}</td>
                                 
-                                {visibleCols.salesRep && isFirstRep && (<td rowSpan={repRowSpan} className="border border-slate-200 px-3 py-2 text-slate-700 font-bold align-middle max-w-[150px] whitespace-normal leading-relaxed bg-slate-50" title={item.sales_rep_name}>{item.sales_rep_name}</td>)}
-                                {visibleCols.bpName && isFirstBp && (<td rowSpan={bpRowSpan} className="border border-slate-200 px-3 py-2 text-blue-700 font-bold align-middle max-w-[200px] whitespace-normal leading-relaxed bg-white" title={item.bp_name}>{item.bp_name}</td>)}
-                                {visibleCols.lobName && isFirstLob && (<td rowSpan={lobRowSpan} className="border border-slate-200 px-3 py-2 text-slate-600 font-medium align-middle max-w-[150px] whitespace-normal leading-relaxed bg-white" title={item.lob_name}>{item.lob_name}</td>)}
+                                {visibleCols.salesRep && isFirstRep && (<td rowSpan={repRowSpan} className="border border-base-300 px-3 py-2 text-base-content/80 font-bold align-middle max-w-[150px] whitespace-normal leading-relaxed bg-base-200" title={item.sales_rep_name}>{item.sales_rep_name}</td>)}
+                                {visibleCols.bpName && isFirstBp && (<td rowSpan={bpRowSpan} className="border border-base-300 px-3 py-2 text-accent font-bold align-middle max-w-[200px] whitespace-normal leading-relaxed bg-base-100" title={item.bp_name}>{item.bp_name}</td>)}
+                                {visibleCols.lobName && isFirstLob && (<td rowSpan={lobRowSpan} className="border border-base-300 px-3 py-2 text-base-content/70 font-medium align-middle max-w-[150px] whitespace-normal leading-relaxed bg-base-100" title={item.lob_name}>{item.lob_name}</td>)}
 
-                                {visibleCols.category && <td className="border border-slate-200 px-3 py-2 text-slate-700">{item.product_category}</td>}
-                                {visibleCols.line && <td className="border border-slate-200 px-3 py-2 text-slate-700">{item.product_line}</td>}
-                                {visibleCols.group && <td className="border border-slate-200 px-3 py-2 text-slate-700">{item.item_group}</td>}
-                                <td className="border border-slate-200 px-3 py-2 text-slate-800 font-bold">{item.product_model}</td>
-                                {visibleCols.itemCode && <td className="border border-slate-200 px-3 py-2 text-slate-500 font-mono">{item.item_code}</td>}
-                                {visibleCols.description && <td className="border border-slate-200 px-3 py-2 text-slate-600 truncate max-w-xs">{item.item_description}</td>}
-                                {visibleCols.brand && <td className="border border-slate-200 px-3 py-2 text-slate-700">{item.brand}</td>}
-                                {visibleCols.ln_price && <td className={`border border-slate-200 px-3 py-2 text-right tracking-wider ${item.ln_price !== null ? 'text-emerald-600' : 'text-slate-300 italic'}`}>{item.ln_price !== null ? item.ln_price.toFixed(2) : '#N/A'}</td>}
+                                {visibleCols.category && <td className="border border-base-300 px-3 py-2 text-base-content/80">{item.product_category}</td>}
+                                {visibleCols.line && <td className="border border-base-300 px-3 py-2 text-base-content/80">{item.product_line}</td>}
+                                {visibleCols.group && <td className="border border-base-300 px-3 py-2 text-base-content/80">{item.item_group}</td>}
+                                <td className="border border-base-300 px-3 py-2 text-base-content font-bold">{item.product_model}</td>
+                                {visibleCols.itemCode && <td className="border border-base-300 px-3 py-2 text-base-content/60 font-mono">{item.item_code}</td>}
+                                {visibleCols.description && <td className="border border-base-300 px-3 py-2 text-base-content/70 truncate max-w-xs">{item.item_description}</td>}
+                                {visibleCols.brand && <td className="border border-base-300 px-3 py-2 text-base-content/80">{item.brand}</td>}
+                                {visibleCols.ln_price && <td className={`border border-base-300 px-3 py-2 text-right tracking-wider ${item.ln_price !== null ? 'text-success' : 'text-base-content/30 italic'}`}>{item.ln_price !== null ? item.ln_price.toFixed(2) : '#N/A'}</td>}
                                 {visibleCols.cogs_price && (
-                                    <td className={`border border-slate-200 px-3 py-2 text-right tracking-wider ${item.cogs_price ? 'text-rose-600' : 'text-slate-300 italic'}`}>
-                                        {item.cogs_price ? (<div className="flex flex-col items-end"><span>{Number(item.cogs_price).toFixed(2)}</span>{isCogsUsd && <span className="text-slate-500">(AED {cogsPriceAed})</span>}</div>) : '#N/A'}
+                                    <td className={`border border-base-300 px-3 py-2 text-right tracking-wider ${item.cogs_price ? 'text-error' : 'text-base-content/30 italic'}`}>
+                                        {item.cogs_price ? (<div className="flex flex-col items-end"><span>{Number(item.cogs_price).toFixed(2)}</span>{isCogsUsd && <span className="text-base-content/60">(AED {cogsPriceAed})</span>}</div>) : '#N/A'}
                                     </td>
                                 )}
-                                {visibleCols.cogs_currency && <td className="border border-slate-200 px-3 py-2 text-center text-slate-600">{item.cogs_currency || '-'}</td>}
-                                {visibleCols.kmi_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-700">{item.kmi_qty || item.kmmi_qty || 0}</td>}
-                                {visibleCols.kme_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-700">{item.kme_qty || 0}</td>}
-                                {visibleCols.total_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-800 bg-slate-100/50">{item.total_qty || 0}</td>}
-                                {visibleCols.avg12m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-700 bg-blue-50/30">{Number(item.avg_12m_sales || 0).toFixed(1)}</td>}
-                                {visibleCols.avg6m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-700 bg-blue-50/30">{Number(item.avg_6m_sales || 0).toFixed(1)}</td>}
-                                {visibleCols.avg3m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800 bg-blue-100/20">{Number(item.avg_3m_sales || 0).toFixed(1)}</td>}         
-                                <td className={`border border-slate-200 px-3 py-2 text-center border-l-slate-300 ${item.forecast_qty > 0 ? 'bg-blue-50 text-slate-900' : 'text-slate-300'}`}>{item.forecast_qty > 0 ? item.forecast_qty : '-'}</td>
+                                {visibleCols.cogs_currency && <td className="border border-base-300 px-3 py-2 text-center text-base-content/70">{item.cogs_currency || '-'}</td>}
+                                {visibleCols.kmi_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content/80">{item.kmi_qty || item.kmmi_qty || 0}</td>}
+                                {visibleCols.kme_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content/80">{item.kme_qty || 0}</td>}
+                                {visibleCols.total_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content bg-base-300/30">{item.total_qty || 0}</td>}
+                                {visibleCols.avg12m && <td className="border border-base-300 px-3 py-2 text-center text-accent bg-accent/5">{Number(item.avg_12m_sales || 0).toFixed(1)}</td>}
+                                {visibleCols.avg6m && <td className="border border-base-300 px-3 py-2 text-center text-accent bg-accent/5">{Number(item.avg_6m_sales || 0).toFixed(1)}</td>}
+                                {visibleCols.avg3m && <td className="border border-base-300 px-3 py-2 text-center text-accent bg-accent/5">{Number(item.avg_3m_sales || 0).toFixed(1)}</td>}         
+                                <td className={`border border-base-300 px-3 py-2 text-center border-l-base-content/15 ${item.forecast_qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/30'}`}>{item.forecast_qty > 0 ? item.forecast_qty : '-'}</td>
                                 {visibleCols.confirmed_qty && (
-                                    <td className={`border border-slate-200 px-3 py-2 text-center ${item.confirmed_qty > 0 ? 'bg-emerald-50 text-emerald-900' : 'text-slate-300'}`}>{item.confirmed_qty > 0 ? item.confirmed_qty : '-'}</td>
+                                    <td className={`border border-base-300 px-3 py-2 text-center ${item.confirmed_qty > 0 ? 'bg-success/10 text-success' : 'text-base-content/30'}`}>{item.confirmed_qty > 0 ? item.confirmed_qty : '-'}</td>
                                 )}
-                                <td className={`border border-slate-200 px-3 py-2 text-right ${item.forecast_qty > 0 ? 'bg-blue-50 text-slate-900' : 'text-slate-300'}`}>{item.forecast_qty > 0 ? item.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                <td className={`border border-base-300 px-3 py-2 text-right ${item.forecast_qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/30'}`}>{item.forecast_qty > 0 ? item.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                             </tr>
                         );
                     })}
-                    {bpSummaryData.length === 0 && <tr><td colSpan={activeColCount} className="p-10 text-center text-slate-500 italic">{searchTerm ? 'No entries match your search.' : `No forecast entries found for ${monthFilter}.`}</td></tr>}
+                    {bpSummaryData.length === 0 && <tr><td colSpan={activeColCount} className="p-10 text-center text-base-content/60 italic">{searchTerm ? 'No entries match your search.' : `No forecast entries found for ${monthFilter}.`}</td></tr>}
                 </tbody>
 
                 {bpSummaryData.length > 0 && (
-                    <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-slate-100 font-bold text-slate-700">
+                    <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-base-150 font-bold text-base-content/80">
                         <tr>
                             <td colSpan={subtotalColSpan + (visibleCols.salesRep ? 1 : 0) + (visibleCols.bpName ? 1 : 0) + (visibleCols.lobName ? 1 : 0) + 1} className="px-4 py-3 text-right uppercase tracking-wider">Total (All Pages)</td>
-                            {visibleCols.ln_price && <td className="px-3 py-3 text-center border-l border-slate-200">-</td>}
+                            {visibleCols.ln_price && <td className="px-3 py-3 text-center border-l border-base-300">-</td>}
                             {visibleCols.cogs_price && <td className="px-3 py-3 text-center">-</td>}
                             {visibleCols.cogs_currency && <td className="px-3 py-3 text-center">-</td>}
-                            {visibleCols.kmi_qty && <td className="px-3 py-3 text-center text-slate-800">{gridTotals.kmi_qty}</td>}
-                            {visibleCols.kme_qty && <td className="px-3 py-3 text-center text-slate-800">{gridTotals.kme_qty}</td>}
-                            {visibleCols.total_qty && <td className="px-3 py-3 text-center text-slate-900">{gridTotals.total_qty}</td>}
+                            {visibleCols.kmi_qty && <td className="px-3 py-3 text-center text-base-content">{gridTotals.kmi_qty}</td>}
+                            {visibleCols.kme_qty && <td className="px-3 py-3 text-center text-base-content">{gridTotals.kme_qty}</td>}
+                            {visibleCols.total_qty && <td className="px-3 py-3 text-center text-base-content">{gridTotals.total_qty}</td>}
                             {visibleCols.avg12m && <td className="px-3 py-3 text-center">-</td>}
                             {visibleCols.avg6m && <td className="px-3 py-3 text-center">-</td>}
                             {visibleCols.avg3m && <td className="px-3 py-3 text-center">-</td>}
                             
-                            <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-300 ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.forecast_qty : '-'}</td>
+                            <td className={`border border-base-content/15 px-3 py-2 text-center border-l-base-content/15 ${gridTotals.forecast_qty > 0 ? 'bg-success/15 text-base-content shadow-inner' : 'text-base-content/60'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.forecast_qty : '-'}</td>
                             {visibleCols.confirmed_qty && (
-                                <td className={`border border-slate-300 px-3 py-2 text-center ${gridTotals.confirmed_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.confirmed_qty > 0 ? gridTotals.confirmed_qty : '-'}</td>
+                                <td className={`border border-base-content/15 px-3 py-2 text-center ${gridTotals.confirmed_qty > 0 ? 'bg-success/15 text-base-content shadow-inner' : 'text-base-content/60'}`}>{gridTotals.confirmed_qty > 0 ? gridTotals.confirmed_qty : '-'}</td>
                             )}
-                            <td className={`border border-slate-300 px-3 py-2 text-right ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                            <td className={`border border-base-content/15 px-3 py-2 text-right ${gridTotals.forecast_qty > 0 ? 'bg-success/15 text-base-content shadow-inner' : 'text-base-content/60'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                         </tr>
                     </tfoot>
                 )}

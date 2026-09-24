@@ -112,25 +112,25 @@ export default function MonthPicker({
 
             {isOpen && !disabled && (
                 <div
-                    className={`absolute z-50 mt-2 w-56 bg-white border border-slate-200 shadow-xl rounded-lg p-3 animate-in slide-in-from-top-2 ${
+                    className={`absolute z-50 mt-2 w-56 bg-base-100 border border-base-300 shadow-xl rounded-lg p-3 animate-in slide-in-from-top-2 ${
                         align === 'right' ? 'right-0' : 'left-0'
                     }`}
                 >
                     {/* Year navigation */}
-                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-base-200">
                         <button
                             type="button"
                             onClick={() => setViewYear((y) => y - 1)}
-                            className="p-1 rounded hover:bg-slate-100 text-slate-500"
+                            className="p-1 rounded hover:bg-base-150 text-base-content/60"
                             aria-label="Previous year"
                         >
                             <ChevronLeft size={16} />
                         </button>
-                        <span className="text-sm font-black text-slate-700">{viewYear}</span>
+                        <span className="text-sm font-black text-base-content/80">{viewYear}</span>
                         <button
                             type="button"
                             onClick={() => setViewYear((y) => y + 1)}
-                            className="p-1 rounded hover:bg-slate-100 text-slate-500"
+                            className="p-1 rounded hover:bg-base-150 text-base-content/60"
                             aria-label="Next year"
                         >
                             <ChevronRight size={16} />
@@ -147,13 +147,13 @@ export default function MonthPicker({
 
                             let stateClasses: string;
                             if (isSelected) {
-                                stateClasses = isViewOnly ? 'bg-amber-500 text-white' : 'bg-blue-600 text-white';
+                                stateClasses = isViewOnly ? 'bg-secondary text-secondary-content' : 'bg-primary text-primary-content';
                             } else if (monthDisabled) {
-                                stateClasses = 'text-slate-300 cursor-not-allowed';
+                                stateClasses = 'text-base-content/30 cursor-not-allowed';
                             } else if (isViewOnly) {
-                                stateClasses = 'bg-amber-50 text-amber-700 hover:bg-amber-100';
+                                stateClasses = 'bg-warning/10 text-warning-strong hover:bg-warning/20';
                             } else {
-                                stateClasses = 'text-slate-600 hover:bg-blue-50 hover:text-blue-700';
+                                stateClasses = 'text-base-content/70 hover:bg-primary/10 hover:text-primary-strong';
                             }
 
                             return (
@@ -174,12 +174,12 @@ export default function MonthPicker({
 
                     {/* Legend (only when an editable threshold is provided) */}
                     {editableFrom && (
-                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                        <div className="mt-3 pt-2 border-t border-base-200 flex items-center justify-between text-[10px] font-semibold text-base-content/60">
                             <span className="inline-flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-sm bg-blue-600 shrink-0" /> Editable
+                                <span className="w-2.5 h-2.5 rounded-sm bg-primary shrink-0" /> Editable
                             </span>
                             <span className="inline-flex items-center gap-1">
-                                <Lock size={10} className="text-amber-500 shrink-0" /> View only
+                                <Lock size={10} className="text-warning-strong shrink-0" /> View only
                             </span>
                         </div>
                     )}
