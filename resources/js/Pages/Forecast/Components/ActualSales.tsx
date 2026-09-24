@@ -196,37 +196,37 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
   return (
     <div className="max-w-8xl mx-auto flex flex-col h-full space-y-4 relative animate-in fade-in duration-300">
         {notification && (
-          <div className="fixed top-20 right-8 bg-success text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-in slide-in-from-top-4">
+          <div className="fixed top-20 right-8 bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-in slide-in-from-top-4">
             <CheckCircle2 size={20} /> {notification}
           </div>
         )}
 
-        <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 p-4 shrink-0 flex justify-between items-center">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 shrink-0 flex justify-between items-center">
             <div>
-                <h3 className="text-sm font-bold text-base-content uppercase tracking-wider">Weekly Category Performance</h3>
-                <p className="text-xs text-base-content/60">Track dynamic actuals and budgets for {selectedYear}</p>
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Weekly Category Performance</h3>
+                <p className="text-xs text-slate-500">Track dynamic actuals and budgets for {selectedYear}</p>
             </div>
             
             <button 
                 onClick={handleSaveData} 
                 disabled={isSaving || pendingSavesCount === 0} 
-                className="bg-primary text-primary-content h-[36px] px-6 rounded-lg font-bold text-sm hover:bg-primary-hover disabled:bg-base-content/20 flex items-center gap-2 transition-all shadow-sm"
+                className="bg-amber-600 text-white h-[36px] px-6 rounded-lg font-bold text-sm hover:bg-amber-700 disabled:bg-slate-300 flex items-center gap-2 transition-all shadow-sm"
             >
                 <Save size={16} /> {isSaving ? 'Saving...' : `Save ${pendingSavesCount} Updates`}
             </button>
         </div>
 
-        <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto pb-4 max-h-[800px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-xs text-center border-collapse whitespace-nowrap">
                     <thead className="sticky top-0 z-20 shadow-sm">
                         <tr>
-                            <th className="border border-base-content/15 bg-primary-tint px-3 py-2 sticky left-0 z-30 min-w-[120px]" rowSpan={2}>Sales person</th>
-                            <th className="border border-base-content/15 bg-primary-tint px-3 py-2 sticky left-[120px] z-30 min-w-[180px]" rowSpan={2}>Category</th>
+                            <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 sticky left-0 z-30 min-w-[120px]" rowSpan={2}>Sales person</th>
+                            <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 sticky left-[120px] z-30 min-w-[180px]" rowSpan={2}>Category</th>
                             {MONTHS.map(month => {
                                 const weeks = getWeeksInMonth(selectedYear, month.key);
                                 // The colSpan is dynamic: # of weeks + Forecast + Confirmed + Budget
-                                return <th key={`header-${month.key}`} colSpan={weeks.length + 3} className="border border-base-content/15 bg-primary-tint-strong px-2 py-1 text-base-content font-bold uppercase tracking-wider">{month.label}</th>;
+                                return <th key={`header-${month.key}`} colSpan={weeks.length + 3} className="border border-slate-300 bg-[#f8cbad] px-2 py-1 text-slate-800 font-bold uppercase tracking-wider">{month.label}</th>;
                             })}
                         </tr>
                         <tr>
@@ -236,23 +236,23 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
                                     <React.Fragment key={`subheader-${month.key}`}>
                                         {/* Dynamically Generate W1, W2, W3... */}
                                         {weeks.map(w => (
-                                            <th key={`w${w}-${month.key}`} className="border border-base-content/15 bg-primary-tint px-4 py-1 text-base-content/80">W{w}</th>
+                                            <th key={`w${w}-${month.key}`} className="border border-slate-300 bg-[#fce4d6] px-4 py-1 text-slate-700">W{w}</th>
                                         ))}
-                                        <th className="border border-base-content/15 bg-base-150 px-4 py-1 text-base-content font-bold border-l-2 border-l-base-content/25">Current Forecast</th>
-                                        <th className="border border-base-content/15 bg-success-tint px-4 py-1 text-success font-bold">Confirmed Sales</th>
-                                        <th className="border border-base-content/15 bg-warning-tint px-4 py-1 text-warning-strong font-bold border-r-2 border-r-base-content/25">Budget (AED)</th>
+                                        <th className="border border-slate-300 bg-slate-100 px-4 py-1 text-slate-800 font-bold border-l-2 border-l-slate-400">Current Forecast</th>
+                                        <th className="border border-slate-300 bg-emerald-50 px-4 py-1 text-emerald-800 font-bold">Confirmed Sales</th>
+                                        <th className="border border-slate-300 bg-amber-50 px-4 py-1 text-amber-800 font-bold border-r-2 border-r-slate-400">Budget (AED)</th>
                                     </React.Fragment>
                                 );
                             })}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-base-200">
+                    <tbody className="divide-y divide-slate-100">
                         {Object.keys(actualSalesData.categoriesData).length > 0 ? (
                             <>
                                 {Object.keys(actualSalesData.categoriesData).sort().map((category, catIndex, arr) => (
-                                    <tr key={`actual-${category}`} className="hover:bg-base-200 transition-colors">
-                                        {catIndex === 0 && <td className="border border-base-content/15 px-3 py-2 font-bold bg-base-100 sticky left-0 z-10 align-top uppercase shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={arr.length + 2}>{user.full_name}</td>}
-                                        <td className="border border-base-content/15 px-3 py-2 font-medium text-left bg-base-100 sticky left-[120px] z-10 text-base-content/80 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{category}</td>
+                                    <tr key={`actual-${category}`} className="hover:bg-slate-50 transition-colors">
+                                        {catIndex === 0 && <td className="border border-slate-300 px-3 py-2 font-bold bg-white sticky left-0 z-10 align-top uppercase shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={arr.length + 2}>{user.full_name}</td>}
+                                        <td className="border border-slate-300 px-3 py-2 font-medium text-left bg-white sticky left-[120px] z-10 text-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{category}</td>
                                         
                                         {MONTHS.map(month => {
                                             const monthData = actualSalesData.categoriesData[category][month.key];
@@ -268,23 +268,23 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
                                                         const isEdited = val !== (initialDataMap[category]?.[month.key]?.[weekField] || '');
                                                         
                                                         return (
-                                                            <td key={`input-w${w}-${month.key}`} className="border border-base-content/15 px-1 py-1 bg-base-100">
+                                                            <td key={`input-w${w}-${month.key}`} className="border border-slate-300 px-1 py-1 bg-white">
                                                                 <input 
                                                                     type="number" value={val} onChange={(e) => handleInputChange(category, month.key, weekField, e.target.value)} placeholder="0.00"
-                                                                    className={`w-16 text-right text-[11px] h-6 border-base-300 rounded focus:ring-accent font-bold transition-colors ${isEdited ? 'bg-accent/5 text-accent border-accent' : 'text-base-content/80'}`}
+                                                                    className={`w-16 text-right text-[11px] h-6 border-slate-200 rounded focus:ring-blue-500 font-bold transition-colors ${isEdited ? 'bg-blue-50 text-blue-900 border-blue-400' : 'text-slate-700'}`}
                                                                 />
                                                             </td>
                                                         );
                                                     })}
                                                     
-                                                    <td className="border border-base-content/15 bg-base-200/50 px-2 py-2 font-bold text-base-content/70 border-l-2 border-l-base-content/25">{monthData?.forecastAed > 0 ? monthData.forecastAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                                    <td className="border border-base-content/15 bg-success/5 px-2 py-2 font-black text-success">{monthData?.confirmedAed > 0 ? monthData.confirmedAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                    <td className="border border-slate-300 bg-slate-50/50 px-2 py-2 font-bold text-slate-600 border-l-2 border-l-slate-400">{monthData?.forecastAed > 0 ? monthData.forecastAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                    <td className="border border-slate-300 bg-emerald-50/30 px-2 py-2 font-black text-emerald-700">{monthData?.confirmedAed > 0 ? monthData.confirmedAed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                                     
                                                     {/* BUDGET INPUT */}
-                                                    <td className="border border-base-content/15 px-1 py-1 border-r-2 border-r-base-content/25 bg-base-100">
+                                                    <td className="border border-slate-300 px-1 py-1 border-r-2 border-r-slate-400 bg-white">
                                                         <input 
                                                             type="number" value={data.budget ?? ''} onChange={(e) => handleInputChange(category, month.key, 'budget', e.target.value)} placeholder="0.00"
-                                                            className={`w-20 text-right text-[11px] h-6 border-base-300 rounded focus:ring-warning font-bold transition-colors ${data.budget !== (initialDataMap[category]?.[month.key]?.budget || '') ? 'bg-warning/20 text-warning-strong border-warning' : 'bg-warning/5 text-warning-strong'}`}
+                                                            className={`w-20 text-right text-[11px] h-6 border-slate-200 rounded focus:ring-amber-500 font-bold transition-colors ${data.budget !== (initialDataMap[category]?.[month.key]?.budget || '') ? 'bg-amber-100 text-amber-900 border-amber-400' : 'bg-amber-50/20 text-amber-900'}`}
                                                         />
                                                     </td>
                                                 </React.Fragment>
@@ -294,45 +294,45 @@ export default function ActualSales({ dbEntries, dbProducts, dbBudgets = [], sel
                                 ))}
                                 
                                 {/* USD TOTALS */}
-                                <tr className="bg-base-200 font-bold border-t-2 border-base-content/15">
-                                    <td className="border border-base-content/15 px-3 py-3 text-left sticky left-[120px] z-10 bg-base-150 uppercase text-base-content/70 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TOTAL IN USD</td>
+                                <tr className="bg-slate-50 font-bold border-t-2 border-slate-300">
+                                    <td className="border border-slate-300 px-3 py-3 text-left sticky left-[120px] z-10 bg-slate-100 uppercase text-slate-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TOTAL IN USD</td>
                                     {MONTHS.map(month => {
                                         const weeks = getWeeksInMonth(selectedYear, month.key);
                                         return (
                                             <React.Fragment key={`usd-total-${month.key}`}>
                                                 {weeks.map(w => {
                                                     const val = dynamicTotals[month.key][`w${w}` as keyof typeof dynamicTotals[string]];
-                                                    return <td key={`usd-w${w}`} className="border border-base-300 px-2 py-2 text-base-content/60">{val > 0 ? (val / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
+                                                    return <td key={`usd-w${w}`} className="border border-slate-200 px-2 py-2 text-slate-500">{val > 0 ? (val / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
                                                 })}
-                                                <td className="border border-base-content/15 px-2 py-2 border-l-2 border-l-base-content/25 text-base-content/70">{actualSalesData.totals.forecastAed[month.key] > 0 ? (actualSalesData.totals.forecastAed[month.key] / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                                <td className="border border-base-content/15 px-2 py-2 text-success">{actualSalesData.totals.confirmedAed[month.key] > 0 ? (actualSalesData.totals.confirmedAed[month.key] / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                                <td className="border border-base-content/15 px-2 py-2 border-r-2 border-r-base-content/25 text-warning-strong">{dynamicTotals[month.key].budget > 0 ? (dynamicTotals[month.key].budget / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                <td className="border border-slate-300 px-2 py-2 border-l-2 border-l-slate-400 text-slate-600">{actualSalesData.totals.forecastAed[month.key] > 0 ? (actualSalesData.totals.forecastAed[month.key] / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                <td className="border border-slate-300 px-2 py-2 text-emerald-600">{actualSalesData.totals.confirmedAed[month.key] > 0 ? (actualSalesData.totals.confirmedAed[month.key] / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                <td className="border border-slate-300 px-2 py-2 border-r-2 border-r-slate-400 text-amber-600">{dynamicTotals[month.key].budget > 0 ? (dynamicTotals[month.key].budget / 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                             </React.Fragment>
                                         );
                                     })}
                                 </tr>
 
                                 {/* AED TOTALS */}
-                                <tr className="bg-base-300/50 font-bold">
-                                    <td className="border border-base-content/15 px-3 py-3 text-left sticky left-[120px] z-10 bg-base-300 uppercase text-base-content shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TOTAL IN AED</td>
+                                <tr className="bg-slate-100/80 font-bold">
+                                    <td className="border border-slate-300 px-3 py-3 text-left sticky left-[120px] z-10 bg-slate-200 uppercase text-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TOTAL IN AED</td>
                                     {MONTHS.map(month => {
                                         const weeks = getWeeksInMonth(selectedYear, month.key);
                                         return (
                                             <React.Fragment key={`aed-total-${month.key}`}>
                                                 {weeks.map(w => {
                                                     const val = dynamicTotals[month.key][`w${w}` as keyof typeof dynamicTotals[string]];
-                                                    return <td key={`aed-w${w}`} className="border border-base-300 px-2 py-2 text-base-content/80">{val > 0 ? val.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
+                                                    return <td key={`aed-w${w}`} className="border border-slate-200 px-2 py-2 text-slate-700">{val > 0 ? val.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
                                                 })}
-                                                <td className="border border-base-content/15 px-2 py-2 border-l-2 border-l-base-content/25 text-base-content">{actualSalesData.totals.forecastAed[month.key] > 0 ? actualSalesData.totals.forecastAed[month.key].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                                <td className="border border-base-content/15 px-2 py-2 text-success">{actualSalesData.totals.confirmedAed[month.key] > 0 ? actualSalesData.totals.confirmedAed[month.key].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                                                <td className="border border-base-content/15 px-2 py-2 border-r-2 border-r-base-content/25 text-warning-strong">{dynamicTotals[month.key].budget > 0 ? dynamicTotals[month.key].budget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                <td className="border border-slate-300 px-2 py-2 border-l-2 border-l-slate-400 text-slate-800">{actualSalesData.totals.forecastAed[month.key] > 0 ? actualSalesData.totals.forecastAed[month.key].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                <td className="border border-slate-300 px-2 py-2 text-emerald-700">{actualSalesData.totals.confirmedAed[month.key] > 0 ? actualSalesData.totals.confirmedAed[month.key].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                <td className="border border-slate-300 px-2 py-2 border-r-2 border-r-slate-400 text-amber-700">{dynamicTotals[month.key].budget > 0 ? dynamicTotals[month.key].budget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                             </React.Fragment>
                                         );
                                     })}
                                 </tr>
                             </>
                         ) : (
-                            <tr><td colSpan={86} className="p-10 text-center text-base-content/60 italic">No forecast data found for {selectedYear}.</td></tr>
+                            <tr><td colSpan={86} className="p-10 text-center text-slate-500 italic">No forecast data found for {selectedYear}.</td></tr>
                         )}
                     </tbody>
                 </table>

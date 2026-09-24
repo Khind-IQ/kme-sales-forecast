@@ -45,23 +45,23 @@ export default function Login({
     const displayError = customError || errors.email || errors.password;
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-base-200 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
             <Head title="Log in" />
 
             <div className="w-full max-w-[340px]">
-                <div className="bg-base-100 rounded-lg shadow-sm border border-base-300 p-5">
+                <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
                     <div className="mb-5 flex justify-center">
                         <img src={khindLogo} alt="Logo" className="h-7 w-auto object-contain" />
                     </div>
 
                     {status && !displayError && (
-                        <div className="mb-4 text-sm font-medium text-success">
+                        <div className="mb-4 text-sm font-medium text-green-600">
                             {status}
                         </div>
                     )}
 
                     {customError && (
-                        <div role="alert" className="mb-3 bg-error/10 border-l-4 border-error text-error px-2.5 py-2 rounded text-xs flex items-center animate-shake">
+                        <div role="alert" className="mb-3 bg-red-50 border-l-4 border-red-500 text-red-700 px-2.5 py-2 rounded text-xs flex items-center animate-shake">
                             <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                             </svg>
@@ -71,7 +71,7 @@ export default function Login({
 
                     <form onSubmit={submit} className="space-y-3.5">
                         <div>
-                            <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-widest text-base-content/60 mb-1">
+                            <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Email 
                             </label>
                             <input
@@ -83,24 +83,24 @@ export default function Login({
                                 onChange={(e) => setData('email', e.target.value)}
                                 aria-invalid={!!errors.email}
                                 aria-describedby={errors.email ? 'email-error' : undefined}
-                                className="w-full px-2.5 py-2 border border-base-content/15 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all outline-none bg-base-200/50 text-sm"
+                                className="w-full px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none bg-slate-50/50 text-sm"
                                 placeholder="name@khind.com"
                                 required
                             />
                             {errors.email && (
-                                <p id="email-error" role="alert" className="mt-1 text-xs text-error">{errors.email}</p>
+                                <p id="email-error" role="alert" className="mt-1 text-xs text-red-600">{errors.email}</p>
                             )}
                         </div>
 
                         <div>
                             <div className="flex justify-between mb-1">
-                                <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-widest text-base-content/60">
+                                <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-widest text-slate-500">
                                     Password
                                 </label>
                                 {canResetPassword && (
                                     <Link
                                         href={route('password.request')}
-                                        className="text-[11px] font-bold uppercase tracking-tight text-accent hover:text-accent">
+                                        className="text-[11px] font-bold uppercase tracking-tight text-blue-600 hover:text-blue-700">
                                         Forgot Password
                                     </Link>
                                 )}
@@ -115,7 +115,7 @@ export default function Login({
                                     onChange={(e) => setData('password', e.target.value)}
                                     aria-invalid={!!errors.password}
                                     aria-describedby={errors.password ? 'password-error' : undefined}
-                                    className="w-full px-2.5 py-2 border border-base-content/15 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all outline-none bg-base-200/50 text-sm"
+                                    className="w-full px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none bg-slate-50/50 text-sm"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -124,7 +124,7 @@ export default function Login({
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     aria-pressed={showPassword}
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-base-content/45 hover:text-base-content/70">
+                                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600">
                                     {showPassword ? (
                                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
                                     ) : (
@@ -133,7 +133,7 @@ export default function Login({
                                 </button>
                             </div>
                             {errors.password && (
-                                <p id="password-error" role="alert" className="mt-1 text-xs text-error">{errors.password}</p>
+                                <p id="password-error" role="alert" className="mt-1 text-xs text-red-600">{errors.password}</p>
                             )}
                         </div>
 
@@ -143,9 +143,9 @@ export default function Login({
                                 type="checkbox"
                                 checked={data.remember}
                                 onChange={(e) => setData('remember', e.target.checked)}
-                                className="w-3.5 h-3.5 text-accent border-base-content/15 rounded focus:ring-accent"
+                                className="w-3.5 h-3.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                             />
-                            <label htmlFor="remember-me" className="ml-2 text-xs text-base-content/60 cursor-pointer">
+                            <label htmlFor="remember-me" className="ml-2 text-xs text-slate-500 cursor-pointer">
                                 Remember this device
                             </label>
                         </div>
@@ -153,7 +153,7 @@ export default function Login({
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-primary text-primary-content py-2 rounded-lg font-bold text-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:opacity-50 transition-all shadow-sm active:scale-[0.98]"
+                            className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 disabled:opacity-50 transition-all shadow-sm active:scale-[0.98]"
                         >
                             {processing ? 'Authenticating...' : 'Sign In'}
                         </button>
@@ -161,17 +161,17 @@ export default function Login({
 
                     <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-base-300"></div>
+                            <div className="w-full border-t border-slate-200"></div>
                         </div>
                         <div className="relative flex justify-center text-xs">
-                            <span className="px-2 bg-base-100 text-base-content/45 uppercase tracking-widest">Or</span>
+                            <span className="px-2 bg-white text-slate-400 uppercase tracking-widest">Or</span>
                         </div>
                     </div>
 
                     <button
                         type="button"
                         onClick={handleMicrosoftLogin}
-                        className="w-full bg-base-100 border border-base-content/15 text-base-content/80 py-2 rounded-lg font-medium text-sm hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-base-content/40 transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
+                        className="w-full bg-white border border-slate-300 text-slate-700 py-2 rounded-lg font-medium text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 23 23" fill="none">
                             <path d="M11 11H0V0h11v11z" fill="#F25022"/>
@@ -183,7 +183,7 @@ export default function Login({
                     </button>
                 </div>
 
-                <p className="mt-6 text-center text-[9px] text-base-content/45 uppercase tracking-[0.2em]">
+                <p className="mt-6 text-center text-[9px] text-slate-400 uppercase tracking-[0.2em]">
                     © 2026 Khind Middle East (KME)
                 </p>
             </div>

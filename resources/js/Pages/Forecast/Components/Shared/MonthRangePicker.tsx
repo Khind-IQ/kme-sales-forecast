@@ -86,12 +86,12 @@ export default function MonthRangePicker({
 
             {open && !disabled && (
                 <div
-                    className={`absolute z-50 mt-2 w-64 bg-base-100 border border-base-300 shadow-xl rounded-lg p-3 ${align === 'right' ? 'right-0' : 'left-0'}`}
+                    className={`absolute z-50 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-lg p-3 ${align === 'right' ? 'right-0' : 'left-0'}`}
                 >
-                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-base-200">
-                        <button type="button" onClick={() => setViewYear((y) => y - 1)} className="p-1 rounded hover:bg-base-150 text-base-content/60" aria-label="Previous year"><ChevronLeft size={16} /></button>
-                        <span className="text-sm font-black text-base-content/80">{viewYear}</span>
-                        <button type="button" onClick={() => setViewYear((y) => y + 1)} className="p-1 rounded hover:bg-base-150 text-base-content/60" aria-label="Next year"><ChevronRight size={16} /></button>
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                        <button type="button" onClick={() => setViewYear((y) => y - 1)} className="p-1 rounded hover:bg-slate-100 text-slate-500" aria-label="Previous year"><ChevronLeft size={16} /></button>
+                        <span className="text-sm font-black text-slate-700">{viewYear}</span>
+                        <button type="button" onClick={() => setViewYear((y) => y + 1)} className="p-1 rounded hover:bg-slate-100 text-slate-500" aria-label="Next year"><ChevronRight size={16} /></button>
                     </div>
 
                     <div className="grid grid-cols-3 gap-1.5">
@@ -101,10 +101,10 @@ export default function MonthRangePicker({
                             const end = isEnd(cand);
                             const inRange = isInRange(cand);
                             const cls = start || end
-                                ? 'bg-primary text-primary-content'
+                                ? 'bg-blue-600 text-white'
                                 : inRange
-                                ? 'bg-primary/10 text-primary-strong'
-                                : 'text-base-content/70 hover:bg-primary/10 hover:text-primary-strong';
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700';
                             return (
                                 <button key={lab} type="button" onClick={() => selectMonth(idx)} className={`text-xs font-bold rounded-md py-1.5 transition-colors ${cls}`}>
                                     {lab}
@@ -113,7 +113,7 @@ export default function MonthRangePicker({
                         })}
                     </div>
 
-                    <div className="mt-2 pt-2 border-t border-base-200 text-[10px] font-semibold text-base-content/60">
+                    <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] font-semibold text-slate-500">
                         {pendingStart ? `Start: ${fmt(pendingStart)} — now pick the end month` : (value.start ? `${fmt(value.start)} – ${fmt(value.end)}` : 'Pick the start month')}
                     </div>
                 </div>

@@ -238,141 +238,141 @@ export default function SummaryByItem({ isActive, dbLobs, dbProducts, dbPricing,
   if (visibleCols.itemCode) colSpanOffset++; if (visibleCols.description) colSpanOffset++; if (visibleCols.brand) colSpanOffset++;
 
   return (
-    <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden flex flex-col h-full max-h-[800px] animate-in fade-in duration-300">
-        <div className="p-5 border-b border-base-300 bg-base-200/50 flex justify-between items-center shrink-0">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full max-h-[800px] animate-in fade-in duration-300">
+        <div className="p-5 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
-            <h3 className="text-sm font-bold text-base-content uppercase tracking-wider">Summary By Item Code</h3>
-            <div className="flex items-center gap-2 bg-base-100 border border-base-300 rounded-lg px-2 py-1 shadow-sm">
-                <span className="text-xs font-bold text-base-content/60 uppercase">Forecast View:</span>
-                <MonthPicker value={masterMonthFilter} onChange={setMasterMonthFilter} className="text-xs font-black text-success h-6 px-1 cursor-pointer" />
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Summary By Item Code</h3>
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+                <span className="text-xs font-bold text-slate-500 uppercase">Forecast View:</span>
+                <MonthPicker value={masterMonthFilter} onChange={setMasterMonthFilter} className="text-xs font-black text-emerald-600 h-6 px-1 cursor-pointer" />
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-              <div className="text-xs text-base-content/60 font-bold bg-base-300 px-3 py-1.5 rounded-full">{masterProducts.filter(p => !p.isSubtotal).length} Rows</div>
+              <div className="text-xs text-slate-500 font-bold bg-slate-200 px-3 py-1.5 rounded-full">{masterProducts.filter(p => !p.isSubtotal).length} Rows</div>
               
               <ColumnSettings>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.category} onChange={() => toggleColumn('category')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Product Category</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.line} onChange={() => toggleColumn('line')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Product Line</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.group} onChange={() => toggleColumn('group')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Product Group</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.itemCode} onChange={() => toggleColumn('itemCode')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Item Code</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.description} onChange={() => toggleColumn('description')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Item Description</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.brand} onChange={() => toggleColumn('brand')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Brand</label>
-                  <div className="border-t border-base-200 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-success"><input type="checkbox" checked={visibleCols.ln_price} onChange={() => toggleColumn('ln_price')} className="rounded border-base-content/15 text-success focus:ring-success" />Weighted Avg Price (AED)</label>         
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-error"><input type="checkbox" checked={visibleCols.cogs_price} onChange={() => toggleColumn('cogs_price')} className="rounded border-base-content/15 text-error focus:ring-error" />COGS Price</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-error"><input type="checkbox" checked={visibleCols.cogs_currency} onChange={() => toggleColumn('cogs_currency')} className="rounded border-base-content/15 text-error focus:ring-error" />COGS Currency</label>
-                  <div className="border-t border-base-200 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.kmi_qty} onChange={() => toggleColumn('kmi_qty')} className="rounded border-base-content/15 text-accent focus:ring-accent" />KMI On Hand</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.kme_qty} onChange={() => toggleColumn('kme_qty')} className="rounded border-base-content/15 text-accent focus:ring-accent" />KME On Hand</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.total_qty} onChange={() => toggleColumn('total_qty')} className="rounded border-base-content/15 text-accent focus:ring-accent" />Total On Hand</label>
-                  <div className="border-t border-base-200 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.avg12m} onChange={() => toggleColumn('avg12m')} className="rounded border-base-content/15 text-accent focus:ring-accent" />12M Avg (Sales)</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.avg6m} onChange={() => toggleColumn('avg6m')} className="rounded border-base-content/15 text-accent focus:ring-accent" />6M Avg (Sales)</label>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-accent"><input type="checkbox" checked={visibleCols.avg3m} onChange={() => toggleColumn('avg3m')} className="rounded border-base-content/15 text-accent focus:ring-accent" />3M Avg (Sales)</label>
-                  <div className="border-t border-base-200 my-1 pt-1"></div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-base-content/80 cursor-pointer hover:text-success"><input type="checkbox" checked={visibleCols.confirmed_qty} onChange={() => toggleColumn('confirmed_qty')} className="rounded border-base-content/15 text-success focus:ring-success" />Confirmed Qty</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.category} onChange={() => toggleColumn('category')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Product Category</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.line} onChange={() => toggleColumn('line')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Product Line</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.group} onChange={() => toggleColumn('group')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Product Group</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.itemCode} onChange={() => toggleColumn('itemCode')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Item Code</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.description} onChange={() => toggleColumn('description')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Item Description</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.brand} onChange={() => toggleColumn('brand')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Brand</label>
+                  <div className="border-t border-slate-100 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-emerald-600"><input type="checkbox" checked={visibleCols.ln_price} onChange={() => toggleColumn('ln_price')} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />Weighted Avg Price (AED)</label>         
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-rose-600"><input type="checkbox" checked={visibleCols.cogs_price} onChange={() => toggleColumn('cogs_price')} className="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />COGS Price</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-rose-600"><input type="checkbox" checked={visibleCols.cogs_currency} onChange={() => toggleColumn('cogs_currency')} className="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />COGS Currency</label>
+                  <div className="border-t border-slate-100 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.kmi_qty} onChange={() => toggleColumn('kmi_qty')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />KMI On Hand</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.kme_qty} onChange={() => toggleColumn('kme_qty')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />KME On Hand</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.total_qty} onChange={() => toggleColumn('total_qty')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />Total On Hand</label>
+                  <div className="border-t border-slate-100 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.avg12m} onChange={() => toggleColumn('avg12m')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />12M Avg (Sales)</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.avg6m} onChange={() => toggleColumn('avg6m')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />6M Avg (Sales)</label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-blue-600"><input type="checkbox" checked={visibleCols.avg3m} onChange={() => toggleColumn('avg3m')} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />3M Avg (Sales)</label>
+                  <div className="border-t border-slate-100 my-1 pt-1"></div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:text-emerald-600"><input type="checkbox" checked={visibleCols.confirmed_qty} onChange={() => toggleColumn('confirmed_qty')} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />Confirmed Qty</label>
               </ColumnSettings>
 
-              <button onClick={handleExportCSV} disabled={masterProducts.length === 0} className="flex items-center gap-2 text-xs font-bold bg-base-100 border border-base-content/15 text-base-content/80 px-3 py-1.5 rounded-lg hover:bg-base-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+              <button onClick={handleExportCSV} disabled={masterProducts.length === 0} className="flex items-center gap-2 text-xs font-bold bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
                   <Download size={14} /> Export CSV
               </button>
           </div>
         </div>
         <div className="overflow-auto flex-1 relative" aria-busy={isLoadingData}>
             {isLoadingData ? (
-                <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-base-content/60 bg-base-200/50 gap-3 z-50">
-                    <Loader2 size={30} className="animate-spin text-primary" />
+                <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-50/50 gap-3 z-50">
+                    <Loader2 size={30} className="animate-spin text-blue-500" />
                     <span className="text-sm font-medium">Aggregating Data for {masterMonthFilter}...</span>
                 </div>
             ) : (
             <table className="w-full text-[12px] text-left border-collapse whitespace-nowrap">
                 <thead className="sticky top-0 z-20 shadow-sm">
                     <tr>
-                        <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold text-center">No</th>
+                        <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold text-center">No</th>
                         {visibleCols.category && (
-                            <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold hover:brightness-95 transition-colors cursor-pointer group" onClick={() => handleSort('category')}>
-                                <div className="flex items-center justify-between gap-2">Product Category {sortConfig.key === 'category' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-accent"/> : <ArrowDown size={14} className="text-accent"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
+                            <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold hover:bg-[#fad0b9] transition-colors cursor-pointer group" onClick={() => handleSort('category')}>
+                                <div className="flex items-center justify-between gap-2">Product Category {sortConfig.key === 'category' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
                             </th>
                         )}
-                        {visibleCols.line && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold">Product Line</th>}
-                        {visibleCols.group && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold">Product Group</th>}
-                        <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold">Product Model</th>
+                        {visibleCols.line && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold">Product Line</th>}
+                        {visibleCols.group && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold">Product Group</th>}
+                        <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold">Product Model</th>
                         {visibleCols.itemCode && (
-                            <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold hover:brightness-95 transition-colors cursor-pointer group" onClick={() => handleSort('itemCode')}>
-                                <div className="flex items-center justify-between gap-2">Item Code {sortConfig.key === 'itemCode' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-accent"/> : <ArrowDown size={14} className="text-accent"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
+                            <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold hover:bg-[#fad0b9] transition-colors cursor-pointer group" onClick={() => handleSort('itemCode')}>
+                                <div className="flex items-center justify-between gap-2">Item Code {sortConfig.key === 'itemCode' ? (sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>) : <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />}</div>
                             </th>
                         )}
-                        {visibleCols.description && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold">Item Description</th>}
-                        {visibleCols.brand && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold">Brand</th>}
+                        {visibleCols.description && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold">Item Description</th>}
+                        {visibleCols.brand && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold">Brand</th>}
 
                         {visibleCols.ln_price && (
-                            <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold">
+                            <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold">
                                 <div 
                                     className="flex items-center justify-end gap-1.5 cursor-help" 
                                     title="Formula: (Total Net Sales / Total Forecast Qty)"
                                 >
                                     Weighted Avg Price (AED)
-                                    <Info size={14} className="text-base-content/60 hover:text-base-content/80 transition-colors" />
+                                    <Info size={14} className="text-slate-500 hover:text-slate-700 transition-colors" />
                                 </div>
                             </th>
                         )}
                         
-                        {visibleCols.cogs_price && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold text-right">COGS Price</th>}
-                        {visibleCols.cogs_currency && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold text-center">COGS Currency</th>}
-                        {visibleCols.kmi_qty && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold text-center">KMI On Hand</th>}
-                        {visibleCols.kme_qty && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold text-center">KME On Hand</th>}
-                        {visibleCols.total_qty && <th className="border border-base-content/15 bg-primary-tint px-3 py-2 text-base-content font-bold text-center">Total On Hand</th>}
-                        {visibleCols.avg12m && <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center">12M Avg (Sales)</th>}
-                        {visibleCols.avg6m && <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center">6M Avg (Sales)</th>}
-                        {visibleCols.avg3m && <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center">3M Avg (Sales)</th>}
+                        {visibleCols.cogs_price && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold text-right">COGS Price</th>}
+                        {visibleCols.cogs_currency && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold text-center">COGS Currency</th>}
+                        {visibleCols.kmi_qty && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold text-center">KMI On Hand</th>}
+                        {visibleCols.kme_qty && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold text-center">KME On Hand</th>}
+                        {visibleCols.total_qty && <th className="border border-slate-300 bg-[#fce4d6] px-3 py-2 text-slate-800 font-bold text-center">Total On Hand</th>}
+                        {visibleCols.avg12m && <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center">12M Avg (Sales)</th>}
+                        {visibleCols.avg6m && <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center">6M Avg (Sales)</th>}
+                        {visibleCols.avg3m && <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center">3M Avg (Sales)</th>}
                         {activeReps.map(rep => (
                             <React.Fragment key={rep}>
-                                <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)] border-l-base-content/25"><div>{rep}</div><div className="font-normal opacity-80">Forecast Qty</div></th>
+                                <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)] border-l-slate-400"><div>{rep}</div><div className="font-normal opacity-80">Forecast Qty</div></th>
                                 {visibleCols.confirmed_qty && (
-                                    <th className="border border-base-content/15 bg-success-tint px-3 py-2 text-success font-bold text-center shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]"><div>{rep}</div><div className="font-normal opacity-80">Confirm Qty</div></th>
+                                    <th className="border border-slate-300 bg-emerald-100 px-3 py-2 text-emerald-800 font-bold text-center shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]"><div>{rep}</div><div className="font-normal opacity-80">Confirm Qty</div></th>
                                 )}
-                                <th className="border border-base-content/15 bg-accent-tint px-3 py-2 text-accent font-bold text-center shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]"><div>{rep}</div><div className="font-normal opacity-80">Amount (AED)</div></th>
+                                <th className="border border-slate-300 bg-blue-100 px-3 py-2 text-blue-800 font-bold text-center shadow-[inset_2px_0_4px_-2px_rgba(0,0,0,0.05)]"><div>{rep}</div><div className="font-normal opacity-80">Amount (AED)</div></th>
                             </React.Fragment>
                         ))}
                         
                         {/* HIDE  IF NOT ADMIN */}
                         {isAdmin && (
                             <>
-                                <th className="border border-base-content/15 bg-success px-3 py-2 text-white font-bold text-center shadow-lg border-l-base-content/25"><div>Total Forecast</div><div className="font-normal opacity-80">Qty</div></th>
+                                <th className="border border-slate-300 bg-emerald-600 px-3 py-2 text-white font-bold text-center shadow-lg border-l-slate-400"><div>Total Forecast</div><div className="font-normal opacity-80">Qty</div></th>
                                 {visibleCols.confirmed_qty && (
-                                    <th className="border border-base-content/15 bg-success px-3 py-2 text-white font-bold text-center shadow-lg"><div>Total Confirm</div><div className="font-normal opacity-80">Qty</div></th>
+                                    <th className="border border-slate-300 bg-emerald-600 px-3 py-2 text-white font-bold text-center shadow-lg"><div>Total Confirm</div><div className="font-normal opacity-80">Qty</div></th>
                                 )}
-                                <th className="border border-base-content/15 bg-success px-3 py-2 text-white font-bold text-center shadow-lg"><div>Total Forecast</div><div className="font-normal opacity-80">Net Sales (AED)</div></th>
+                                <th className="border border-slate-300 bg-emerald-600 px-3 py-2 text-white font-bold text-center shadow-lg"><div>Total Forecast</div><div className="font-normal opacity-80">Net Sales (AED)</div></th>
                             </>
                         )}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-base-200">
+                <tbody className="divide-y divide-slate-100">
                     {paginatedData.map((prod: any) => {
                         if (prod.isSubtotal) {
                             return (
-                                <tr key={prod.unique_key} className="bg-base-300/50 transition-colors border-y border-base-content/15">
-                                    <td className="border border-base-300 px-3 py-2"></td>
-                                    <td colSpan={colSpanOffset} className="border border-base-300 px-3 py-2 text-right text-base-content/80 font-bold uppercase tracking-wider">Total {prod.product_category}</td>
-                                    {visibleCols.ln_price && <td className="border border-base-300 px-3 py-2 text-right text-success">{prod.ln_price.toFixed(2)}</td>}
-                                    {visibleCols.cogs_price && (<td className="border border-base-300 px-3 py-2 text-right text-error"><div className="flex flex-col items-end"><span>{prod.cogs_usd_value.toFixed(2)}</span><span className="text-base-content/60">(AED {prod.cogs_aed_value.toFixed(2)})</span></div></td>)}
-                                    {visibleCols.cogs_currency && <td className="border border-base-300 px-3 py-2 text-center text-base-content/60">USD</td>}
-                                    {visibleCols.kmi_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content">{prod.kmi_qty}</td>}
-                                    {visibleCols.kme_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content">{prod.kme_qty}</td>}
-                                    {visibleCols.total_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content bg-base-300/50">{prod.total_qty}</td>}
-                                    {visibleCols.avg12m && <td className="border border-base-300 px-3 py-2 text-center text-accent">{prod.avg_12m_sales.toFixed(1)}</td>}
-                                    {visibleCols.avg6m && <td className="border border-base-300 px-3 py-2 text-center text-accent">{prod.avg_6m_sales.toFixed(1)}</td>}
-                                    {visibleCols.avg3m && <td className="border border-base-300 px-3 py-2 text-center text-accent">{prod.avg_3m_sales.toFixed(1)}</td>}
+                                <tr key={prod.unique_key} className="bg-slate-100/80 transition-colors border-y border-slate-300">
+                                    <td className="border border-slate-200 px-3 py-2"></td>
+                                    <td colSpan={colSpanOffset} className="border border-slate-200 px-3 py-2 text-right text-slate-700 font-bold uppercase tracking-wider">Total {prod.product_category}</td>
+                                    {visibleCols.ln_price && <td className="border border-slate-200 px-3 py-2 text-right text-emerald-700">{prod.ln_price.toFixed(2)}</td>}
+                                    {visibleCols.cogs_price && (<td className="border border-slate-200 px-3 py-2 text-right text-rose-700"><div className="flex flex-col items-end"><span>{prod.cogs_usd_value.toFixed(2)}</span><span className="text-slate-500">(AED {prod.cogs_aed_value.toFixed(2)})</span></div></td>)}
+                                    {visibleCols.cogs_currency && <td className="border border-slate-200 px-3 py-2 text-center text-slate-500">USD</td>}
+                                    {visibleCols.kmi_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-800">{prod.kmi_qty}</td>}
+                                    {visibleCols.kme_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-800">{prod.kme_qty}</td>}
+                                    {visibleCols.total_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-900 bg-slate-200/50">{prod.total_qty}</td>}
+                                    {visibleCols.avg12m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800">{prod.avg_12m_sales.toFixed(1)}</td>}
+                                    {visibleCols.avg6m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800">{prod.avg_6m_sales.toFixed(1)}</td>}
+                                    {visibleCols.avg3m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800">{prod.avg_3m_sales.toFixed(1)}</td>}
                                     {activeReps.map(rep => {
                                         const repData = prod.rep_subtotals[rep] || { qty: 0, confirmedQty: 0, netSales: 0 };
                                         return (
                                             <React.Fragment key={rep}>
-                                                <td className={`border border-base-content/15 px-3 py-2 text-center border-l-base-content/15 ${repData.qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/30'}`}>{repData.qty > 0 ? repData.qty : '-'}</td>
+                                                <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-300 ${repData.qty > 0 ? 'bg-blue-100/60 text-slate-900' : 'text-slate-300'}`}>{repData.qty > 0 ? repData.qty : '-'}</td>
                                                 {visibleCols.confirmed_qty && (
-                                                    <td className={`border border-base-content/15 px-3 py-2 text-center ${repData.confirmedQty > 0 ? 'bg-success/10 text-success' : 'text-base-content/30'}`}>{repData.confirmedQty > 0 ? repData.confirmedQty : '-'}</td>
+                                                    <td className={`border border-slate-300 px-3 py-2 text-center ${repData.confirmedQty > 0 ? 'bg-emerald-100/60 text-emerald-900' : 'text-slate-300'}`}>{repData.confirmedQty > 0 ? repData.confirmedQty : '-'}</td>
                                                 )}
-                                                <td className={`border border-base-content/15 px-3 py-2 text-right ${repData.qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/30'}`}>{repData.qty > 0 ? repData.netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                                <td className={`border border-slate-300 px-3 py-2 text-right ${repData.qty > 0 ? 'bg-blue-100/60 text-slate-900' : 'text-slate-300'}`}>{repData.qty > 0 ? repData.netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                             </React.Fragment>
                                         );
                                     })}
@@ -380,11 +380,11 @@ export default function SummaryByItem({ isActive, dbLobs, dbProducts, dbPricing,
                                     {/* HIDE IF NOT ADMIN */}
                                     {isAdmin && (
                                         <>
-                                            <td className="border border-base-content/15 bg-success/15 px-3 py-2 text-center text-base-content shadow-inner border-l-base-content/25">{prod.forecast_qty > 0 ? prod.forecast_qty : '-'}</td>
+                                            <td className="border border-slate-300 bg-emerald-200/60 px-3 py-2 text-center text-slate-900 shadow-inner border-l-slate-400">{prod.forecast_qty > 0 ? prod.forecast_qty : '-'}</td>
                                             {visibleCols.confirmed_qty && (
-                                                <td className="border border-base-content/15 bg-success/15 px-3 py-2 text-center text-base-content shadow-inner">{prod.confirmed_qty > 0 ? prod.confirmed_qty : '-'}</td>
+                                                <td className="border border-slate-300 bg-emerald-200/60 px-3 py-2 text-center text-slate-900 shadow-inner">{prod.confirmed_qty > 0 ? prod.confirmed_qty : '-'}</td>
                                             )}
-                                            <td className="border border-base-content/15 bg-success/15 px-3 py-2 text-right text-base-content shadow-inner">{prod.forecast_qty > 0 ? prod.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                            <td className="border border-slate-300 bg-emerald-200/60 px-3 py-2 text-right text-slate-900 shadow-inner">{prod.forecast_qty > 0 ? prod.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                         </>
                                     )}
                                 </tr>
@@ -394,37 +394,37 @@ export default function SummaryByItem({ isActive, dbLobs, dbProducts, dbPricing,
                         const cogsPriceAed = isCogsUsd && prod.cogs_price ? (Number(prod.cogs_price) * USD_TO_AED_RATE).toFixed(2) : null;
 
                         return (
-                            <tr key={prod.unique_key || prod.product_id} className="hover:bg-base-200 transition-colors">
-                                <td className="border border-base-300 px-3 py-2 text-center text-base-content/60">{prod.display_index}</td>
-                                {visibleCols.category && <td className="border border-base-300 px-3 py-2 text-base-content/80">{prod.product_category}</td>}
-                                {visibleCols.line && <td className="border border-base-300 px-3 py-2 text-base-content/80">{prod.product_line}</td>}
-                                {visibleCols.group && <td className="border border-base-300 px-3 py-2 text-base-content/80">{prod.item_group}</td>}
-                                <td className="border border-base-300 px-3 py-2 text-base-content font-bold">{prod.product_model}</td>
-                                {visibleCols.itemCode && <td className="border border-base-300 px-3 py-2 text-base-content/60 font-mono">{prod.item_code}</td>}
-                                {visibleCols.description && <td className="border border-base-300 px-3 py-2 text-base-content/70 truncate max-w-xs">{prod.item_description}</td>}
-                                {visibleCols.brand && <td className="border border-base-300 px-3 py-2 text-base-content/80">{prod.brand}</td>}
-                                {visibleCols.ln_price && <td className={`border border-base-300 px-3 py-2 text-right tracking-wider ${prod.ln_price > 0 ? 'text-success' : 'text-base-content/30 italic'}`}>{prod.ln_price > 0 ? prod.ln_price.toFixed(2) : '#N/A'}</td>}
+                            <tr key={prod.unique_key || prod.product_id} className="hover:bg-slate-50 transition-colors">
+                                <td className="border border-slate-200 px-3 py-2 text-center text-slate-500">{prod.display_index}</td>
+                                {visibleCols.category && <td className="border border-slate-200 px-3 py-2 text-slate-700">{prod.product_category}</td>}
+                                {visibleCols.line && <td className="border border-slate-200 px-3 py-2 text-slate-700">{prod.product_line}</td>}
+                                {visibleCols.group && <td className="border border-slate-200 px-3 py-2 text-slate-700">{prod.item_group}</td>}
+                                <td className="border border-slate-200 px-3 py-2 text-slate-800 font-bold">{prod.product_model}</td>
+                                {visibleCols.itemCode && <td className="border border-slate-200 px-3 py-2 text-slate-500 font-mono">{prod.item_code}</td>}
+                                {visibleCols.description && <td className="border border-slate-200 px-3 py-2 text-slate-600 truncate max-w-xs">{prod.item_description}</td>}
+                                {visibleCols.brand && <td className="border border-slate-200 px-3 py-2 text-slate-700">{prod.brand}</td>}
+                                {visibleCols.ln_price && <td className={`border border-slate-200 px-3 py-2 text-right tracking-wider ${prod.ln_price > 0 ? 'text-emerald-600' : 'text-slate-300 italic'}`}>{prod.ln_price > 0 ? prod.ln_price.toFixed(2) : '#N/A'}</td>}
                                 {visibleCols.cogs_price && (
-                                    <td className={`border border-base-300 px-3 py-2 text-right tracking-wider ${prod.cogs_price ? 'text-error' : 'text-base-content/30 italic'}`}>
-                                        {prod.cogs_price ? (<div className="flex flex-col items-end"><span>{Number(prod.cogs_price).toFixed(2)}</span>{prod.is_cogs_usd && <span className="text-base-content/60">(AED {cogsPriceAed})</span>}</div>) : '#N/A'}
+                                    <td className={`border border-slate-200 px-3 py-2 text-right tracking-wider ${prod.cogs_price ? 'text-rose-600' : 'text-slate-300 italic'}`}>
+                                        {prod.cogs_price ? (<div className="flex flex-col items-end"><span>{Number(prod.cogs_price).toFixed(2)}</span>{prod.is_cogs_usd && <span className="text-slate-500">(AED {cogsPriceAed})</span>}</div>) : '#N/A'}
                                     </td>
                                 )}
-                                {visibleCols.cogs_currency && <td className="border border-base-300 px-3 py-2 text-center text-base-content/70">{prod.cogs_currency || '-'}</td>}
-                                {visibleCols.kmi_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content/80">{prod.kmi_qty || prod.kmmi_qty || 0}</td>}
-                                {visibleCols.kme_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content/80">{prod.kme_qty || 0}</td>}
-                                {visibleCols.total_qty && <td className="border border-base-300 px-3 py-2 text-center text-base-content bg-base-300/30">{prod.total_qty || 0}</td>}
-                                {visibleCols.avg12m && <td className="border border-base-300 px-3 py-2 text-center text-accent bg-accent/5">{Number(prod.avg_12m_sales || 0).toFixed(1)}</td>}
-                                {visibleCols.avg6m && <td className="border border-base-300 px-3 py-2 text-center text-accent bg-accent/5">{Number(prod.avg_6m_sales || 0).toFixed(1)}</td>}
-                                {visibleCols.avg3m && <td className="border border-base-300 px-3 py-2 text-center text-accent bg-accent/5">{Number(prod.avg_3m_sales || 0).toFixed(1)}</td>}
+                                {visibleCols.cogs_currency && <td className="border border-slate-200 px-3 py-2 text-center text-slate-600">{prod.cogs_currency || '-'}</td>}
+                                {visibleCols.kmi_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-700">{prod.kmi_qty || prod.kmmi_qty || 0}</td>}
+                                {visibleCols.kme_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-700">{prod.kme_qty || 0}</td>}
+                                {visibleCols.total_qty && <td className="border border-slate-200 px-3 py-2 text-center text-slate-800 bg-slate-100/50">{prod.total_qty || 0}</td>}
+                                {visibleCols.avg12m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-700 bg-blue-50/30">{Number(prod.avg_12m_sales || 0).toFixed(1)}</td>}
+                                {visibleCols.avg6m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-700 bg-blue-50/30">{Number(prod.avg_6m_sales || 0).toFixed(1)}</td>}
+                                {visibleCols.avg3m && <td className="border border-slate-200 px-3 py-2 text-center text-blue-800 bg-blue-100/20">{Number(prod.avg_3m_sales || 0).toFixed(1)}</td>}
                                 {activeReps.map(rep => {
                                     const repData = prod.rep_data[rep] || { qty: 0, confirmedQty: 0, netSales: 0 };
                                     return (
                                         <React.Fragment key={rep}>
-                                            <td className={`border border-base-300 px-3 py-2 text-center border-l-base-content/15 ${repData.qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/30'}`}>{repData.qty > 0 ? repData.qty : '-'}</td>
+                                            <td className={`border border-slate-200 px-3 py-2 text-center border-l-slate-300 ${repData.qty > 0 ? 'bg-blue-50 text-slate-900' : 'text-slate-300'}`}>{repData.qty > 0 ? repData.qty : '-'}</td>
                                             {visibleCols.confirmed_qty && (
-                                                <td className={`border border-base-300 px-3 py-2 text-center ${repData.confirmedQty > 0 ? 'bg-success/10 text-success' : 'text-base-content/30'}`}>{repData.confirmedQty > 0 ? repData.confirmedQty : '-'}</td>
+                                                <td className={`border border-slate-200 px-3 py-2 text-center ${repData.confirmedQty > 0 ? 'bg-emerald-50 text-emerald-900' : 'text-slate-300'}`}>{repData.confirmedQty > 0 ? repData.confirmedQty : '-'}</td>
                                             )}
-                                            <td className={`border border-base-300 px-3 py-2 text-right ${repData.qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/30'}`}>{repData.qty > 0 ? repData.netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                            <td className={`border border-slate-200 px-3 py-2 text-right ${repData.qty > 0 ? 'bg-blue-50 text-slate-900' : 'text-slate-300'}`}>{repData.qty > 0 ? repData.netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                         </React.Fragment>
                                     );
                                 })}
@@ -432,50 +432,50 @@ export default function SummaryByItem({ isActive, dbLobs, dbProducts, dbPricing,
                                 {/* HIDE IF NOT ADMIN */}
                                 {isAdmin && (
                                     <>
-                                        <td className={`border border-base-content/15 px-3 py-2 text-center border-l-base-content/25 ${prod.forecast_qty > 0 ? 'bg-success/10 text-base-content' : 'text-base-content/30'}`}>{prod.forecast_qty > 0 ? prod.forecast_qty : '-'}</td>
+                                        <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-400 ${prod.forecast_qty > 0 ? 'bg-emerald-50 text-slate-900' : 'text-slate-300'}`}>{prod.forecast_qty > 0 ? prod.forecast_qty : '-'}</td>
                                         {visibleCols.confirmed_qty && (
-                                            <td className={`border border-base-content/15 px-3 py-2 text-center ${prod.confirmed_qty > 0 ? 'bg-success/10 text-base-content' : 'text-base-content/30'}`}>{prod.confirmed_qty > 0 ? prod.confirmed_qty : '-'}</td>
+                                            <td className={`border border-slate-300 px-3 py-2 text-center ${prod.confirmed_qty > 0 ? 'bg-emerald-50 text-slate-900' : 'text-slate-300'}`}>{prod.confirmed_qty > 0 ? prod.confirmed_qty : '-'}</td>
                                         )}
-                                        <td className={`border border-base-content/15 px-3 py-2 text-right ${prod.forecast_qty > 0 ? 'bg-success/10 text-base-content' : 'text-base-content/30'}`}>{prod.forecast_qty > 0 ? prod.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                        <td className={`border border-slate-300 px-3 py-2 text-right ${prod.forecast_qty > 0 ? 'bg-emerald-50 text-slate-900' : 'text-slate-300'}`}>{prod.forecast_qty > 0 ? prod.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                     </>
                                 )}
                             </tr>
                         );
                     })}
-                    {masterProducts.length === 0 && <tr><td colSpan={activeColCount} className="p-10 text-center text-base-content/60 italic">{searchTerm ? 'No products match your search.' : `No forecast entries found for ${masterMonthFilter}. Add data in the Sales Forecast tab.`}</td></tr>}
+                    {masterProducts.length === 0 && <tr><td colSpan={activeColCount} className="p-10 text-center text-slate-500 italic">{searchTerm ? 'No products match your search.' : `No forecast entries found for ${masterMonthFilter}. Add data in the Sales Forecast tab.`}</td></tr>}
                 </tbody>
                 
                 {masterProducts.length > 0 && (
-                    <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-base-150 font-bold text-base-content/80">
+                    <tfoot className="sticky bottom-0 z-20 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] bg-slate-100 font-bold text-slate-700">
                         <tr>
                             <td colSpan={colSpanOffset + 1} className="px-4 py-3 text-right uppercase tracking-wider">Total (All Pages)</td>
-                            {visibleCols.ln_price && <td className="px-3 py-3 text-center border-l border-base-300">-</td>}
+                            {visibleCols.ln_price && <td className="px-3 py-3 text-center border-l border-slate-200">-</td>}
                             {visibleCols.cogs_price && <td className="px-3 py-3 text-center">-</td>}
                             {visibleCols.cogs_currency && <td className="px-3 py-3 text-center">-</td>}
-                            {visibleCols.kmi_qty && <td className="px-3 py-3 text-center text-base-content">{gridTotals.kmi_qty}</td>}
-                            {visibleCols.kme_qty && <td className="px-3 py-3 text-center text-base-content">{gridTotals.kme_qty}</td>}
-                            {visibleCols.total_qty && <td className="px-3 py-3 text-center text-base-content">{gridTotals.total_qty}</td>}
+                            {visibleCols.kmi_qty && <td className="px-3 py-3 text-center text-slate-800">{gridTotals.kmi_qty}</td>}
+                            {visibleCols.kme_qty && <td className="px-3 py-3 text-center text-slate-800">{gridTotals.kme_qty}</td>}
+                            {visibleCols.total_qty && <td className="px-3 py-3 text-center text-slate-900">{gridTotals.total_qty}</td>}
                             {visibleCols.avg12m && <td className="px-3 py-3 text-center">-</td>}
                             {visibleCols.avg6m && <td className="px-3 py-3 text-center">-</td>}
                             {visibleCols.avg3m && <td className="px-3 py-3 text-center">-</td>}
                             {activeReps.map(rep => (
                                 <React.Fragment key={rep}>
-                                    <td className={`border border-base-content/15 px-3 py-2 text-center border-l-base-content/15 ${gridTotals.reps[rep].qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/60'}`}>{gridTotals.reps[rep].qty > 0 ? gridTotals.reps[rep].qty : '-'}</td>
+                                    <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-300 ${gridTotals.reps[rep].qty > 0 ? 'bg-blue-100/60 text-slate-900' : 'text-slate-500'}`}>{gridTotals.reps[rep].qty > 0 ? gridTotals.reps[rep].qty : '-'}</td>
                                     {visibleCols.confirmed_qty && (
-                                        <td className={`border border-base-content/15 px-3 py-2 text-center ${gridTotals.reps[rep].confirmedQty > 0 ? 'bg-success/10 text-success' : 'text-base-content/60'}`}>{gridTotals.reps[rep].confirmedQty > 0 ? gridTotals.reps[rep].confirmedQty : '-'}</td>
+                                        <td className={`border border-slate-300 px-3 py-2 text-center ${gridTotals.reps[rep].confirmedQty > 0 ? 'bg-emerald-100/60 text-emerald-900' : 'text-slate-500'}`}>{gridTotals.reps[rep].confirmedQty > 0 ? gridTotals.reps[rep].confirmedQty : '-'}</td>
                                     )}
-                                    <td className={`border border-base-content/15 px-3 py-2 text-right ${gridTotals.reps[rep].qty > 0 ? 'bg-accent/5 text-base-content' : 'text-base-content/60'}`}>{gridTotals.reps[rep].qty > 0 ? gridTotals.reps[rep].netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                    <td className={`border border-slate-300 px-3 py-2 text-right ${gridTotals.reps[rep].qty > 0 ? 'bg-blue-100/60 text-slate-900' : 'text-slate-500'}`}>{gridTotals.reps[rep].qty > 0 ? gridTotals.reps[rep].netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 </React.Fragment>
                             ))}
                             
                             {/* HIDE IF NOT ADMIN */}
                             {isAdmin && (
                                 <>
-                                    <td className={`border border-base-content/15 px-3 py-2 text-center border-l-base-content/25 ${gridTotals.forecast_qty > 0 ? 'bg-success/15 text-base-content shadow-inner' : 'text-base-content/60'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.forecast_qty : '-'}</td>
+                                    <td className={`border border-slate-300 px-3 py-2 text-center border-l-slate-400 ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.forecast_qty : '-'}</td>
                                     {visibleCols.confirmed_qty && (
-                                        <td className={`border border-base-content/15 px-3 py-2 text-center ${gridTotals.confirmed_qty > 0 ? 'bg-success/15 text-base-content shadow-inner' : 'text-base-content/60'}`}>{gridTotals.confirmed_qty > 0 ? gridTotals.confirmed_qty : '-'}</td>
+                                        <td className={`border border-slate-300 px-3 py-2 text-center ${gridTotals.confirmed_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.confirmed_qty > 0 ? gridTotals.confirmed_qty : '-'}</td>
                                     )}
-                                    <td className={`border border-base-content/15 px-3 py-2 text-right ${gridTotals.forecast_qty > 0 ? 'bg-success/15 text-base-content shadow-inner' : 'text-base-content/60'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                                    <td className={`border border-slate-300 px-3 py-2 text-right ${gridTotals.forecast_qty > 0 ? 'bg-emerald-200/60 text-slate-900 shadow-inner' : 'text-slate-500'}`}>{gridTotals.forecast_qty > 0 ? gridTotals.net_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                                 </>
                             )}
                         </tr>
