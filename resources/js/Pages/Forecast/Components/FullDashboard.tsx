@@ -22,28 +22,37 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, BarController, LineElement, LineController, PointElement, ChartDataLabels);
-ChartJS.defaults.font.family = "'Figtree', ui-sans-serif, system-ui, -apple-system, sans-serif";
+ChartJS.defaults.font.family = "Manrope, ui-sans-serif, system-ui, -apple-system, sans-serif";
 ChartJS.defaults.font.size = 11;
-ChartJS.defaults.color = '#64748b';
 
-// Muted, cohesive categorical palette (rep doughnut + its legend)
-const CHART_COLORS = ['#1e6091', '#468faf', '#52796f', '#e09f3e', '#bc4749', '#6a4c93', '#1a759f', '#b5838d', '#76c893', '#c9ada7'];
+// Chart ink, derived from the atlas tokens in resources/css/app.css (canvas can't read CSS vars).
+const INK = 'rgba(30, 26, 20, 0.62)';        // base-content/60 — axis ticks
+const INK_MUTED = 'rgba(30, 26, 20, 0.45)';  // base-content/45 — secondary ticks, axis titles
+const INK_LABEL = 'rgba(30, 26, 20, 0.75)';  // base-content/75 — data labels
+const SURFACE = '#fdfcf9';                   // base-100 — gap ring between doughnut slices
+ChartJS.defaults.color = INK;
 
-// Series colors for the revenue / GP combo chart
+// Categorical palette, fixed order — the same validated set khind-cde-requisition charts use
+// (slots 1–2 there: #2a78d6 / #eb6834). Adjacent CVD ΔE ≥ 9.1 on base-100.
+const CHART_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+// Ink for a label drawn on a slot's fill: white only where it clears 3:1 (blue, green, violet, red).
+const ON_CHART_COLOR = ['#ffffff', '#1e1a14', '#1e1a14', '#1e1a14', '#1e1a14', '#ffffff', '#ffffff', '#ffffff'];
+
+// Series colors for the revenue / GP combo chart, in palette order
 const SERIES = {
-    actual: '#1e6091',
-    forecast: '#468faf',
-    confirmed: '#76c893',
-    forecastGp: '#e09f3e',
-    actualGp: '#bc4749',
+    actual: CHART_COLORS[0],
+    forecast: CHART_COLORS[1],
+    confirmed: CHART_COLORS[2],
+    forecastGp: CHART_COLORS[3],
+    actualGp: CHART_COLORS[4],
 };
 
-// Shared dark, rounded BI-style tooltip
+// Shared dark, rounded tooltip on the atlas neutral
 const TOOLTIP: any = {
-    backgroundColor: 'rgba(15, 23, 42, 0.92)',
-    titleColor: '#f8fafc',
-    bodyColor: '#e2e8f0',
-    borderColor: 'rgba(148, 163, 184, 0.25)',
+    backgroundColor: 'rgba(37, 33, 27, 0.94)',
+    titleColor: '#f7f5f1',
+    bodyColor: 'rgba(247, 245, 241, 0.85)',
+    borderColor: 'rgba(247, 245, 241, 0.12)',
     borderWidth: 1,
     padding: 12,
     cornerRadius: 8,
@@ -52,7 +61,7 @@ const TOOLTIP: any = {
     titleFont: { size: 12, weight: '600' },
     bodyFont: { size: 11 },
 };
-const GRID_COLOR = '#eef2f6';
+const GRID_COLOR = 'rgba(30, 26, 20, 0.07)';
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing = [], dbEntries, dbActualSales = [], dbEntriesYtd = [], dbActualSalesYtd = [], user }: any) {
@@ -399,7 +408,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
       datasets: [{
         data: reps.map(r => r.actual),
         backgroundColor: reps.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-        borderColor: '#ffffff',
+        borderColor: SURFACE,
         borderWidth: 3,
         hoverOffset: 6,
       }],
@@ -529,7 +538,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
         },
       },
       datalabels: {
-        color: '#ffffff',
+        color: (ctx: any) => ON_CHART_COLOR[ctx.dataIndex % ON_CHART_COLOR.length],
         font: { size: 10, weight: '700' },
         formatter: (val: number) => {
           const total = fullDashboardData.actualTotal || 1;
@@ -553,18 +562,18 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
       datalabels: { display: false },
     },
     scales: {
-      x: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748b', maxRotation: 0, autoSkip: true } },
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: INK, maxRotation: 0, autoSkip: true } },
       y: {
         position: 'left', beginAtZero: true,
         grid: { color: GRID_COLOR }, border: { display: false },
-        ticks: { color: '#94a3b8', callback: (v: any) => compact(Number(v)) },
-        title: { display: true, text: `Revenue (${dashCurrency})`, color: '#94a3b8', font: { size: 10 } },
+        ticks: { color: INK_MUTED, callback: (v: any) => compact(Number(v)) },
+        title: { display: true, text: `Revenue (${dashCurrency})`, color: INK_MUTED, font: { size: 10 } },
       },
       yGp: {
         position: 'right', beginAtZero: true,
         grid: { drawOnChartArea: false }, border: { display: false },
-        ticks: { color: '#94a3b8', callback: (v: any) => compact(Number(v)) },
-        title: { display: true, text: `GP (${dashCurrency})`, color: '#94a3b8', font: { size: 10 } },
+        ticks: { color: INK_MUTED, callback: (v: any) => compact(Number(v)) },
+        title: { display: true, text: `GP (${dashCurrency})`, color: INK_MUTED, font: { size: 10 } },
       },
     },
   };
@@ -577,11 +586,11 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
     plugins: {
       legend: { display: false },
       tooltip: { ...TOOLTIP, callbacks: { label: (ctx: any) => `  Forecast: ${money(ctx.parsed.y)}` } },
-      datalabels: { anchor: 'end', align: 'end', offset: 2, color: '#475569', font: { size: 10, weight: '600' }, formatter: (v: number) => v > 0 ? compact(v) : '' },
+      datalabels: { anchor: 'end', align: 'end', offset: 2, color: INK_LABEL, font: { size: 10, weight: '600' }, formatter: (v: number) => v > 0 ? compact(v) : '' },
     },
     scales: {
-      x: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748b', maxRotation: 0, autoSkip: true } },
-      y: { beginAtZero: true, grid: { color: GRID_COLOR }, border: { display: false }, ticks: { color: '#94a3b8', callback: (v: any) => compact(Number(v)) } },
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: INK, maxRotation: 0, autoSkip: true } },
+      y: { beginAtZero: true, grid: { color: GRID_COLOR }, border: { display: false }, ticks: { color: INK_MUTED, callback: (v: any) => compact(Number(v)) } },
     },
   };
 
@@ -610,23 +619,23 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300 pb-12" aria-busy={isLoadingData}>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-base-100 p-4 rounded-xl border border-base-300 shadow-sm">
             <div className="grid grid-cols-6 gap-4 items-end mb-4">
                 {/* DATE RANGE FILTER */}
                 <div className="col-span-2">
-                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-500 mb-1 uppercase">
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-base-content/60 mb-1 uppercase">
                         Period
-                        {isLoadingData && <Loader2 size={12} className="animate-spin text-blue-500" />}
+                        {isLoadingData && <Loader2 size={12} className="animate-spin text-primary" />}
                     </label>
                     <MonthRangePicker
                         disabled={isLoadingData}
                         value={{ start: dashFilters.startMonth, end: dashFilters.endMonth }}
                         onChange={(v) => setDashFilters({ ...dashFilters, startMonth: v.start, endMonth: v.end })}
-                        className="w-full text-xs border border-slate-200 rounded py-1.5 px-2 text-left text-slate-700 font-bold bg-white hover:border-slate-300 disabled:opacity-50"
+                        className="w-full text-xs border border-base-300 rounded py-1.5 px-2 text-left text-base-content/80 font-bold bg-base-100 hover:border-base-content/15 disabled:opacity-50"
                     />
                 </div>
                 <div>
-                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">LOB</label>
+                    <label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">LOB</label>
                     <SearchableSelect
                         disabled={isLoadingData}
                         value={dashFilters.lob}
@@ -637,7 +646,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                 </div>
 
                <div>
-                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Sales Rep Name</label>
+                    <label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Sales Rep Name</label>
                     <SearchableSelect
                         disabled={isLoadingData}
                         value={dashFilters.salesPerson}
@@ -649,7 +658,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                 </div>
 
                 <div>
-                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase truncate">Business Partner</label>
+                    <label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase truncate">Business Partner</label>
                     <SearchableSelect
                         disabled={isLoadingData}
                         value={dashFilters.businessPartner}
@@ -659,7 +668,7 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                     />
                 </div>
                 <div>
-                    <label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Brand</label>
+                    <label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Brand</label>
                     <SearchableSelect
                         disabled={isLoadingData}
                         value={dashFilters.brand}
@@ -672,68 +681,68 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                 </div>
             </div>
             <div className="grid grid-cols-5 gap-4 items-end">
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Line</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productLine} onChange={(v) => setDashFilters({ ...dashFilters, productLine: v })} allLabel="All" emptyLabel="No product lines for the current selection" options={dashboardFilterOptions.pLines.map(l => ({ value: l, label: l }))} /></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Category</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productCategory} onChange={(v) => setDashFilters({ ...dashFilters, productCategory: v })} allLabel="All" emptyLabel="No categories for the current selection" options={dashboardFilterOptions.pCats.map(c => ({ value: c, label: c }))} /></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Group</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productGroup} onChange={(v) => setDashFilters({ ...dashFilters, productGroup: v })} allLabel="All" emptyLabel="No groups for the current selection" options={dashboardFilterOptions.pGroups.map(g => ({ value: g, label: g }))} /></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Product Model</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productModel} onChange={(v) => setDashFilters({ ...dashFilters, productModel: v })} allLabel="All" align="right" emptyLabel="No models for the current selection" options={dashboardFilterOptions.pModels.map(m => ({ value: m, label: m }))} /></div>
-                <div><label className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">Item Code</label><SearchableSelect disabled={isLoadingData} value={dashFilters.itemCode} onChange={(v) => setDashFilters({ ...dashFilters, itemCode: v })} allLabel="All" align="right" emptyLabel="No item codes for the current selection" options={dashboardFilterOptions.itemCodes.map(i => ({ value: i, label: i }))} /></div>
+                <div><label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Product Line</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productLine} onChange={(v) => setDashFilters({ ...dashFilters, productLine: v })} allLabel="All" emptyLabel="No product lines for the current selection" options={dashboardFilterOptions.pLines.map(l => ({ value: l, label: l }))} /></div>
+                <div><label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Product Category</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productCategory} onChange={(v) => setDashFilters({ ...dashFilters, productCategory: v })} allLabel="All" emptyLabel="No categories for the current selection" options={dashboardFilterOptions.pCats.map(c => ({ value: c, label: c }))} /></div>
+                <div><label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Product Group</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productGroup} onChange={(v) => setDashFilters({ ...dashFilters, productGroup: v })} allLabel="All" emptyLabel="No groups for the current selection" options={dashboardFilterOptions.pGroups.map(g => ({ value: g, label: g }))} /></div>
+                <div><label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Product Model</label><SearchableSelect disabled={isLoadingData} value={dashFilters.productModel} onChange={(v) => setDashFilters({ ...dashFilters, productModel: v })} allLabel="All" align="right" emptyLabel="No models for the current selection" options={dashboardFilterOptions.pModels.map(m => ({ value: m, label: m }))} /></div>
+                <div><label className="block text-[11px] font-bold text-base-content/60 mb-1 uppercase">Item Code</label><SearchableSelect disabled={isLoadingData} value={dashFilters.itemCode} onChange={(v) => setDashFilters({ ...dashFilters, itemCode: v })} allLabel="All" align="right" emptyLabel="No item codes for the current selection" options={dashboardFilterOptions.itemCodes.map(i => ({ value: i, label: i }))} /></div>
             </div>
         </div>
 
         {hasNoData && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 shadow-sm">
-                <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-amber-800">
+            <div className="flex items-start gap-3 bg-warning/10 border border-warning/40 rounded-xl px-4 py-3.5 shadow-sm">
+                <Info className="w-5 h-5 text-warning-strong flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-warning-strong">
                     <p className="font-semibold">No forecast or actual sales for <span className="underline decoration-amber-300 underline-offset-2">{repLabel}</span> in {periodLabel}.</p>
-                    <p className="text-amber-700/90 mt-0.5">Try widening the period or choosing a different sales rep{dashFilters.salesPerson !== 'All' ? '' : ' / filter'}.</p>
+                    <p className="text-warning-strong/90 mt-0.5">Try widening the period or choosing a different sales rep{dashFilters.salesPerson !== 'All' ? '' : ' / filter'}.</p>
                 </div>
             </div>
         )}
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center border-b border-slate-100 pb-6 mb-6">
+        <div className="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6">
+            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center border-b border-base-200 pb-6 mb-6">
                 <div>
-                    <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Currency</label>
-                    <div className="flex border border-slate-300 rounded overflow-hidden shadow-sm">
+                    <label className="block text-[11px] font-bold text-base-content/60 mb-2 uppercase tracking-widest">Currency</label>
+                    <div className="flex border border-base-content/15 rounded overflow-hidden shadow-sm">
                         {['AED', 'MYR', 'USD'].map((curr: any) => (
-                            <button key={curr} onClick={() => setDashCurrency(curr)} className={`px-4 py-1.5 text-xs font-bold transition-colors ${dashCurrency === curr ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50 border-r border-slate-200 last:border-0'}`}>{curr}</button>
+                            <button key={curr} onClick={() => setDashCurrency(curr)} className={`px-4 py-1.5 text-xs font-bold transition-colors ${dashCurrency === curr ? 'bg-neutral text-neutral-content' : 'bg-base-100 text-base-content/70 hover:bg-base-200 border-r border-base-300 last:border-0'}`}>{curr}</button>
                         ))}
                     </div>
                 </div>
-                <div className="flex-1 grid grid-cols-6 gap-6 divide-x divide-slate-100">
-                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Forecast Revenue</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.forecastTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-xs font-bold text-emerald-600 mb-2 uppercase tracking-wide">Confirmed Revenue</p><p className="text-3xl font-medium text-emerald-600">{fullDashboardData.confirmedTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Actual Revenue</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.actualTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Variance</p><p className={`text-3xl font-light ${(fullDashboardData.actualTotal - fullDashboardData.forecastTotal) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) > 0 ? '+' : '')}{(fullDashboardData.actualTotal - fullDashboardData.forecastTotal).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
-                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Achievement %</p><p className={`text-3xl font-light ${(fullDashboardData.forecastTotal > 0 && fullDashboardData.actualTotal >= fullDashboardData.forecastTotal) ? 'text-emerald-500' : 'text-slate-800'}`}>{fullDashboardData.forecastTotal > 0 ? ((fullDashboardData.actualTotal / fullDashboardData.forecastTotal) * 100).toFixed(2) : '0.00'}%</p></div>
-                    <div className="text-center px-2"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Total On Hand</p><p className="text-3xl font-light text-slate-800">{fullDashboardData.totalOnHand.toLocaleString()}</p></div>
+                <div className="flex-1 grid grid-cols-6 gap-6 divide-x divide-base-200">
+                    <div className="text-center px-2"><p className="text-xs font-bold text-base-content/60 mb-2 uppercase tracking-wide">Forecast Revenue</p><p className="text-3xl font-light text-base-content">{fullDashboardData.forecastTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-success mb-2 uppercase tracking-wide">Confirmed Revenue</p><p className="text-3xl font-medium text-success">{fullDashboardData.confirmedTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-base-content/60 mb-2 uppercase tracking-wide">Actual Revenue</p><p className="text-3xl font-light text-base-content">{fullDashboardData.actualTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-base-content/60 mb-2 uppercase tracking-wide">Variance</p><p className={`text-3xl font-light ${(fullDashboardData.actualTotal - fullDashboardData.forecastTotal) >= 0 ? 'text-success' : 'text-error'}`}>{((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) > 0 ? '+' : '')}{(fullDashboardData.actualTotal - fullDashboardData.forecastTotal).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-base-content/60 mb-2 uppercase tracking-wide">Achievement %</p><p className={`text-3xl font-light ${(fullDashboardData.forecastTotal > 0 && fullDashboardData.actualTotal >= fullDashboardData.forecastTotal) ? 'text-success' : 'text-base-content'}`}>{fullDashboardData.forecastTotal > 0 ? ((fullDashboardData.actualTotal / fullDashboardData.forecastTotal) * 100).toFixed(2) : '0.00'}%</p></div>
+                    <div className="text-center px-2"><p className="text-xs font-bold text-base-content/60 mb-2 uppercase tracking-wide">Total On Hand</p><p className="text-3xl font-light text-base-content">{fullDashboardData.totalOnHand.toLocaleString()}</p></div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-4 pb-8">
-                <div className="col-span-1 flex items-center justify-center relative border-r border-slate-100 pr-6">
+                <div className="col-span-1 flex items-center justify-center relative border-r border-base-200 pr-6">
                     <div className="w-56 h-56 relative shrink-0">
                         {fullDashboardData.actualTotal > 0 ? (
                             <>
                                 <Doughnut data={repDoughnut} options={doughnutOptions} />
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total Actual</span>
-                                    <span className="text-xl font-light text-slate-800">{compact(fullDashboardData.actualTotal)}</span>
+                                    <span className="text-[11px] font-bold text-base-content/60 uppercase tracking-widest">Total Actual</span>
+                                    <span className="text-xl font-light text-base-content">{compact(fullDashboardData.actualTotal)}</span>
                                 </div>
                             </>
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-center"><p className="text-slate-500 italic text-sm">No actual sales for the selected filters.</p></div>
+                            <div className="w-full h-full flex items-center justify-center text-center"><p className="text-base-content/60 italic text-sm">No actual sales for the selected filters.</p></div>
                         )}
                     </div>
 
-                    <div className="flex flex-col gap-2 ml-6 text-[11px] font-bold text-slate-600 max-h-56 overflow-y-auto custom-scrollbar">
+                    <div className="flex flex-col gap-2 ml-6 text-[11px] font-bold text-base-content/70 max-h-56 overflow-y-auto custom-scrollbar">
                         {fullDashboardData.repChartData.map((rep, idx) => {
                             if (rep.actual === 0) return null;
                             const pct = ((rep.actual / fullDashboardData.actualTotal) * 100).toFixed(2);
                             return (
                                 <div key={rep.name} className="flex items-center gap-2 whitespace-nowrap">
                                     <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}></div>
-                                    <span className="w-10 text-slate-500 font-mono text-right">{pct}%</span>
+                                    <span className="w-10 text-base-content/60 font-mono text-right">{pct}%</span>
                                     <span className="truncate max-w-[100px]" title={rep.name}>{rep.name}</span>
                                 </div>
                             );
@@ -742,62 +751,62 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                 </div>
                 
                 <div className="col-span-2 flex flex-col h-72">
-                    <p className="text-sm font-bold text-slate-700 mb-3 px-1">Revenue Performance by LOB</p>
+                    <p className="text-sm font-bold text-base-content/80 mb-3 px-1">Revenue Performance by LOB</p>
                     <div className="flex-1 min-h-0">
                         {fullDashboardData.lobChartData.length > 0 ? (
                             <Bar data={lobBar as any} options={lobBarOptions} />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center"><p className="text-slate-500 italic text-sm">No data available for the selected filters.</p></div>
+                            <div className="w-full h-full flex items-center justify-center"><p className="text-base-content/60 italic text-sm">No data available for the selected filters.</p></div>
                         )}
                     </div>
                 </div>
             </div>
 
-            <div className="mt-8 border border-slate-200 rounded-lg overflow-auto max-h-[500px] relative">
+            <div className="mt-8 border border-base-300 rounded-lg overflow-auto max-h-[500px] relative">
                 <table className="w-full text-xs text-right whitespace-nowrap">
-                    <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+                    <thead className="bg-base-150 text-base-content font-bold border-b border-base-300 sticky top-0 z-20 shadow-sm">
                         <tr>
                             <th className="px-4 py-3 text-center w-12">No</th>
                             <th className="px-4 py-3 text-left">Sales Rep Name</th>
                             <th className="px-4 py-3 text-left">LOB</th>
                             <th className="px-4 py-3 text-left">Business Partner</th>
                             <th className="px-4 py-3">Forecast</th>
-                            <th className="px-4 py-3 text-emerald-700">Confirmed</th>
+                            <th className="px-4 py-3 text-success">Confirmed</th>
                             <th className="px-4 py-3">Actual Sales</th>
                             <th className="px-4 py-3">Variance</th>
                             <th className="px-4 py-3">Achievement %</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-base-200">
                         {fullDashboardData.tableData.map((row: any, idx: number) => {
                             const isPos = (row.actual - row.forecast) >= 0;
                             const pct = row.forecast > 0 ? ((row.actual / row.forecast) * 100).toFixed(2) : '0.00';
                             return (
-                                <tr key={row.rowKey} className="hover:bg-slate-50">
-                                    <td className="px-4 py-2.5 font-mono text-slate-400 text-center">{idx + 1}</td>
-                                    <td className="px-4 py-2.5 font-bold text-slate-500 text-left">{row.salesRep}</td>
-                                    <td className="px-4 py-2.5 font-bold text-slate-700 text-left">{row.lobName}</td>
-                                    <td className="px-4 py-2.5 text-slate-600 text-left truncate max-w-[250px]" title={row.bpName}>{row.bpName}</td>
+                                <tr key={row.rowKey} className="hover:bg-base-200">
+                                    <td className="px-4 py-2.5 font-mono text-base-content/45 text-center">{idx + 1}</td>
+                                    <td className="px-4 py-2.5 font-bold text-base-content/60 text-left">{row.salesRep}</td>
+                                    <td className="px-4 py-2.5 font-bold text-base-content/80 text-left">{row.lobName}</td>
+                                    <td className="px-4 py-2.5 text-base-content/70 text-left truncate max-w-[250px]" title={row.bpName}>{row.bpName}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.forecast.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                    <td className="px-4 py-2.5 font-mono text-emerald-600">{row.confirmed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td className="px-4 py-2.5 font-mono text-success">{row.confirmed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.actual.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                    <td className={`px-4 py-2.5 font-mono ${isPos ? 'text-slate-700' : 'text-rose-500'}`}>{row.actual - row.forecast > 0 ? '+' : ''}{(row.actual - row.forecast).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                    <td className={`px-4 py-2.5 font-mono font-bold ${Number(pct) >= 100 ? 'text-emerald-500' : 'text-slate-600'}`}>{pct}%</td>
+                                    <td className={`px-4 py-2.5 font-mono ${isPos ? 'text-base-content/80' : 'text-error'}`}>{row.actual - row.forecast > 0 ? '+' : ''}{(row.actual - row.forecast).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td className={`px-4 py-2.5 font-mono font-bold ${Number(pct) >= 100 ? 'text-success' : 'text-base-content/70'}`}>{pct}%</td>
                                 </tr>
                             );
                         })}
-                        {fullDashboardData.tableData.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500 italic">No forecast or actual data matches the selected filters.</td></tr>}
+                        {fullDashboardData.tableData.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-base-content/60 italic">No forecast or actual data matches the selected filters.</td></tr>}
                     </tbody>
                     
                     {fullDashboardData.tableData.length > 0 && (
-                        <tfoot className="sticky bottom-0 z-20 bg-slate-100 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] border-t-2 border-slate-200">
+                        <tfoot className="sticky bottom-0 z-20 bg-base-150 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] border-t-2 border-base-300">
                             <tr className="font-bold">
-                                <td colSpan={4} className="px-4 py-3 text-left text-slate-800">Total</td>
-                                <td className="px-4 py-3 font-mono text-slate-800">{fullDashboardData.forecastTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                <td className="px-4 py-3 font-mono text-emerald-600">{fullDashboardData.confirmedTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                <td className="px-4 py-3 font-mono text-slate-800">{fullDashboardData.actualTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                <td className={`px-4 py-3 font-mono ${((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) >= 0) ? 'text-slate-800' : 'text-rose-600'}`}>{((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) > 0 ? '+' : '')}{(fullDashboardData.actualTotal - fullDashboardData.forecastTotal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                <td className="px-4 py-3 font-mono text-slate-800">{fullDashboardData.forecastTotal > 0 ? ((fullDashboardData.actualTotal / fullDashboardData.forecastTotal) * 100).toFixed(2) : '0.00'}%</td>
+                                <td colSpan={4} className="px-4 py-3 text-left text-base-content">Total</td>
+                                <td className="px-4 py-3 font-mono text-base-content">{fullDashboardData.forecastTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td className="px-4 py-3 font-mono text-success">{fullDashboardData.confirmedTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td className="px-4 py-3 font-mono text-base-content">{fullDashboardData.actualTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td className={`px-4 py-3 font-mono ${((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) >= 0) ? 'text-base-content' : 'text-error'}`}>{((fullDashboardData.actualTotal - fullDashboardData.forecastTotal) > 0 ? '+' : '')}{(fullDashboardData.actualTotal - fullDashboardData.forecastTotal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td className="px-4 py-3 font-mono text-base-content">{fullDashboardData.forecastTotal > 0 ? ((fullDashboardData.actualTotal / fullDashboardData.forecastTotal) * 100).toFixed(2) : '0.00'}%</td>
                             </tr>
                         </tfoot>
                     )}
@@ -805,35 +814,35 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
             </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
+        <div className="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6 mt-6">
             <div className="flex flex-col h-80">
-                <p className="text-sm font-bold text-slate-700 mb-0.5 px-1">Revenue &amp; GP by Month</p>
-                <p className="text-[11px] text-slate-500 mb-3 px-1">Current year to date ({currentYear}) — independent of the month filter above</p>
+                <p className="text-sm font-bold text-base-content/80 mb-0.5 px-1">Revenue &amp; GP by Month</p>
+                <p className="text-[11px] text-base-content/60 mb-3 px-1">Current year to date ({currentYear}) — independent of the month filter above</p>
                 <div className="flex-1 min-h-0">
                     {monthlyChartData.some(x => x.forecast || x.actual || x.confirmed) ? (
                         <Bar data={monthBar as any} options={lobBarOptions} />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center"><p className="text-slate-500 italic text-sm">No data for {currentYear} yet.</p></div>
+                        <div className="w-full h-full flex items-center justify-center"><p className="text-base-content/60 italic text-sm">No data for {currentYear} yet.</p></div>
                     )}
                 </div>
             </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
+        <div className="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6 mt-6">
             <div className="flex flex-col h-72 mb-6">
-                <p className="text-sm font-bold text-slate-700 mb-3 px-1">Forecast by Product Line</p>
+                <p className="text-sm font-bold text-base-content/80 mb-3 px-1">Forecast by Product Line</p>
                 <div className="flex-1 min-h-0">
                     {fullDashboardData.productLineChartData.length > 0 ? (
                         <Bar data={plBar} options={plBarOptions} />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center"><p className="text-slate-500 italic text-sm">No forecast data available.</p></div>
+                        <div className="w-full h-full flex items-center justify-center"><p className="text-base-content/60 italic text-sm">No forecast data available.</p></div>
                     )}
                 </div>
             </div>
 
-            <div className="mt-12 border border-slate-200 rounded-lg overflow-auto max-h-[500px] relative">
+            <div className="mt-12 border border-base-300 rounded-lg overflow-auto max-h-[500px] relative">
                 <table className="w-full text-xs text-right whitespace-nowrap">
-                    <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+                    <thead className="bg-base-150 text-base-content font-bold border-b border-base-300 sticky top-0 z-20 shadow-sm">
                         <tr>
                             <th className="px-4 py-3 text-center w-12">No</th>
                             <th className="px-4 py-3 text-left">Product Model</th>
@@ -847,24 +856,24 @@ export default function FullDashboard({ isActive, dbLobs, dbProducts, dbPricing 
                             <th className="px-4 py-3">Avg Sales Last 3M</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-base-200">
                         {fullDashboardData.productModelTableData.map((row, idx: number) => {
                             return (
-                                <tr key={row.productModel} className="hover:bg-slate-50">
-                                    <td className="px-4 py-2.5 font-mono text-slate-400 text-center">{idx + 1}</td>
-                                    <td className="px-4 py-2.5 font-bold text-slate-600 text-left">{row.productModel}</td>
+                                <tr key={row.productModel} className="hover:bg-base-200">
+                                    <td className="px-4 py-2.5 font-mono text-base-content/45 text-center">{idx + 1}</td>
+                                    <td className="px-4 py-2.5 font-bold text-base-content/70 text-left">{row.productModel}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.forecastQty.toLocaleString()}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.forecastAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.onHandKME.toLocaleString()}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.onHandKMI.toLocaleString()}</td>
-                                    <td className="px-4 py-2.5 font-mono font-bold text-slate-700">{row.totalOnHand.toLocaleString()}</td>
+                                    <td className="px-4 py-2.5 font-mono font-bold text-base-content/80">{row.totalOnHand.toLocaleString()}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.avg12m.toLocaleString()}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.avg6m.toLocaleString()}</td>
                                     <td className="px-4 py-2.5 font-mono">{row.avg3m.toLocaleString()}</td>
                                 </tr>
                             );
                         })}
-                        {fullDashboardData.productModelTableData.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-slate-500 italic">No data matches the selected filters.</td></tr>}
+                        {fullDashboardData.productModelTableData.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-base-content/60 italic">No data matches the selected filters.</td></tr>}
                     </tbody>
                 </table>
             </div>

@@ -20,14 +20,14 @@ export default function ColumnSettings({ children }: { children: React.ReactNode
         <div className="relative" ref={dropdownRef}>
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-2 text-xs font-bold border px-3 py-1.5 rounded-lg transition-colors shadow-sm ${isOpen ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+                className={`flex items-center gap-2 text-xs font-bold border px-3 py-1.5 rounded-lg transition-colors shadow-sm ${isOpen ? 'bg-primary/10 text-primary-strong border-primary/40' : 'bg-base-100 text-base-content/80 border-base-content/15 hover:bg-base-200'}`}
             >
                 <Settings2 size={14} /> Columns
             </button>
             
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 shadow-xl rounded-lg p-3 z-50 animate-in slide-in-from-top-2 max-h-96 overflow-y-auto custom-scrollbar">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 pb-2 border-b border-slate-100">Toggle View</div>
+                <div className="absolute right-0 mt-2 w-56 bg-base-100 border border-base-300 shadow-xl rounded-lg p-3 z-50 animate-in slide-in-from-top-2 max-h-96 overflow-y-auto custom-scrollbar">
+                    <div className="text-[10px] font-black text-base-content/45 uppercase tracking-wider mb-2 pb-2 border-b border-base-200">Toggle View</div>
                     <div className="flex flex-col gap-2">
                         {/* Your checkboxes will render here */}
                         {children}
