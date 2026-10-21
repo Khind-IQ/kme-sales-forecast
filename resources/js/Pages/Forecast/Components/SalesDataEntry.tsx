@@ -4,7 +4,7 @@ import Select from 'react-select';
 import { Save, CheckCircle2, Download, Search, Loader2, Lock, AlertCircle, Info, Plus, X, Trash2 } from 'lucide-react';
 
 // shared  Utilities & Hooks
-import { getNextMonthString, getPreviousMonthString } from '../Utils/helpers';
+import { getNextMonthString } from '../Utils/helpers';
 import { downloadCSV } from '../Utils/exportUtils';
 import { usePagination } from '../Hooks/usePagination';
 import { useExchangeRates } from '../Hooks/useExchangeRates';
@@ -78,7 +78,6 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
 
   const baseGridProducts = useMemo(() => {
       if (!selectedLob || dbProducts.length === 0) return [];
-      const prevMonthString = getPreviousMonthString(planningMonth);
       const priceMap = new Map();
       
       // makesure dbPricing is an array before iterating
@@ -89,14 +88,13 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           });
       }
 
+      // Only this month's own saved entries are loaded — previous months are never read.
       const currentMonthEntries = new Map();
-      const prevMonthEntries = new Map();
       
       if (Array.isArray(dbEntries)) {
           dbEntries.forEach((e: any) => {
-              if (e.lob_id === selectedLob) {
-                  if (e.planning_month === planningMonth) currentMonthEntries.set(e.product_id, e);
-                  if (e.planning_month === prevMonthString) prevMonthEntries.set(e.product_id, e);
+              if (e.lob_id === selectedLob && e.planning_month === planningMonth) {
+                  currentMonthEntries.set(e.product_id, e);
               }
           });
       }
@@ -107,7 +105,6 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
       return list.map((prod: any) => {
           const masterPrice = priceMap.get(prod.product_id) || 0;
           const existingEntry = currentMonthEntries.get(prod.product_id);
-          const previousEntry = prevMonthEntries.get(prod.product_id);
 
           const cogsRaw = Number(prod.cogs_price) || 0;
           const isCogsUsd = (prod.cogs_currency || '').toUpperCase() === 'USD';
@@ -118,13 +115,14 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
               saved_qty: existingEntry ? Number(existingEntry.planned_quantity) : '',
               saved_price: existingEntry && Number(existingEntry.planned_price_aed) !== Number(masterPrice) ? Number(existingEntry.planned_price_aed) : '',
               saved_confirmed_qty: existingEntry && existingEntry.confirmed_quantity != null ? Number(existingEntry.confirmed_quantity) : '', 
-              // No carry-forward prefill when viewing a past/current month (read-only) — show saved data only
-              prefill_qty: (!isReadOnly && !existingEntry && previousEntry) ? Number(previousEntry.planned_quantity) : '',
-              prefill_price: (!isReadOnly && !existingEntry && previousEntry && Number(previousEntry.planned_price_aed) !== Number(masterPrice)) ? Number(previousEntry.planned_price_aed) : '',
-              prefill_confirmed_qty: (!isReadOnly && !existingEntry && previousEntry && previousEntry.confirmed_quantity != null) ? Number(previousEntry.confirmed_quantity) : ''
+              // Carry-forward from the previous month is intentionally disabled — each month
+              // starts blank and only shows values that were actually saved for that month.
+              prefill_qty: '',
+              prefill_price: '',
+              prefill_confirmed_qty: ''
           };
       });
-  }, [selectedLob, planningMonth, dbProducts, dbPricing, dbEntries, isReadOnly, USD_TO_AED_RATE]);
+  }, [selectedLob, planningMonth, dbProducts, dbPricing, dbEntries, USD_TO_AED_RATE]);
 
   // Manually-added models, shaped like grid rows. Excludes any that are already in the
   // base grid (can't add a duplicate). Uses the resolved reference price as the list price.
@@ -250,7 +248,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           const isConfirmedQtyChanged = Number(rowConfirmedQty || 0) !== Number(prod.saved_confirmed_qty || 0);
           const isUnsavedPrefill = prod.saved_qty === '' && prod.prefill_qty !== '';
           
-          if ((isQtyChanged || isPriceChanged || isConfirmedQtyChanged || isUnsavedPrefill) && (rowQty !== '' && Number(rowQty) > 0)) count++;
+          if ((isQtyChanged || isPriceChanged || isConfirmedQtyChanged || isUnsavedPrefill) && (rowQty !== '' && Number(rowQty) >= 0)) count++;
       });
       return count;
   }, [gridProducts, edits]);
@@ -295,7 +293,7 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
           const rowConfirmedQty = hasEdit && editData.confirmedQty !== undefined ? editData.confirmedQty : (prod.saved_confirmed_qty !== '' ? prod.saved_confirmed_qty : prod.prefill_confirmed_qty);
           const activePrice = rowPlanPrice !== '' && Number(rowPlanPrice) > 0 ? Number(rowPlanPrice) : prod.master_price_aed;
 
-          if ((Number(rowQty || 0) !== Number(prod.saved_qty || 0) || Number(activePrice) !== Number(prod.saved_price || prod.master_price_aed) || Number(rowConfirmedQty || 0) !== Number(prod.saved_confirmed_qty || 0) || (prod.saved_qty === '' && prod.prefill_qty !== '')) && (rowQty !== '' && Number(rowQty) > 0)) {
+          if ((Number(rowQty || 0) !== Number(prod.saved_qty || 0) || Number(activePrice) !== Number(prod.saved_price || prod.master_price_aed) || Number(rowConfirmedQty || 0) !== Number(prod.saved_confirmed_qty || 0) || (prod.saved_qty === '' && prod.prefill_qty !== '')) && (rowQty !== '' && Number(rowQty) >= 0)) {
               payloadEntries.push({
                   lob_id: selectedLob, product_id: prod.product_id, planning_month: planningMonth, planned_quantity: Number(rowQty),
                   planned_price_aed: activePrice, planned_price_myr: Number((activePrice * EXCHANGE_RATES.MYR).toFixed(2)),
@@ -448,10 +446,6 @@ export default function SalesDataEntry({ dbLobs, dbProducts, dbPricing, dbEntrie
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-base-content/60">
                               <span className="w-2.5 h-2.5 rounded-sm bg-primary/20 border border-primary/50 shrink-0"></span>
                               Unsaved changes
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-base-content/60">
-                              <span className="w-2.5 h-2.5 rounded-sm bg-success/20 border border-success/40 shrink-0"></span>
-                              Carried from last month
                           </span>
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-base-content/60">
                               <span className="w-2.5 h-2.5 rounded-sm bg-warning/20 border border-warning/40 shrink-0"></span>
