@@ -324,7 +324,7 @@ class ForecastController extends Controller
             'entries.*.lob_id' => 'required|exists:lobs,lob_id',
             'entries.*.product_id' => 'required|exists:products,product_id',
             'entries.*.planning_month' => 'required|date_format:Y-m|after_or_equal:' . $nextMonth,
-            'entries.*.planned_quantity' => 'required|integer|min:1',
+            'entries.*.planned_quantity' => 'required|integer|min:0',
             'entries.*.planned_price_myr' => 'required|numeric',
             'entries.*.planned_price_usd' => 'required|numeric',
             'entries.*.planned_price_aed' => 'required|numeric',
