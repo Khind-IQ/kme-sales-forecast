@@ -1,0 +1,18 @@
+# Keep the image small. vendor is installed fresh by composer inside the image, and the
+# frontend (public/build) is built on the host and mounted in, so neither belongs here.
+.git
+.github
+node_modules
+vendor
+public/build
+public/hot
+# storage is mounted from the host at runtime (and owned by www-data on the server).
+storage
+# Cached package lists from the host's vendor; composer regenerates them in the image.
+bootstrap/cache/*.php
+.env
+.env.*
+!.env.example
+tests
+.phpunit.result.cache
+.DS_Store
